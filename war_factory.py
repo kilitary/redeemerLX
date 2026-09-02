@@ -139,19 +139,27 @@ def ensure_combat_readiness(db: Session, item: ItemDB) -> dict[str, Any]:
     and owns at least one ability. Returns a report of what was added.
     """
     report: dict[str, Any] = {}
-    param_ids = {
-        p.id for p in item.item_parameters
-    }
     all_params = db.scalars(select(ParameterDB)).all()
+    existing_pids = {
+        row.par_id
+        for row in db.scalars(
+            select(ItemParameterDB).where(ItemParameterDB.item_id == item.id)
+        ).all()
+    }
     added_params = 0
     for p in all_params:
-        if p.id in param_ids:
+        if p.id in existing_pids:
             continue
+        lo = p.min_value if p.min_value is not None else 0.0
+        hi = p.max_value if p.max_value is not None else 1000.0
+        if hi < lo:
+            lo, hi = hi, lo
+        value = round(random.uniform(lo, hi), 2)
         db.add(
             ItemParameterDB(
                 item_id=item.id,
                 par_id=p.id,
-                value=None,
+                value=value,
                 value_text=None,
                 source="derived",
             )
@@ -1149,6 +1157,10 @@ def _run_battle(
                     c_cur = src.params[c_pid]
                     c_newv = c_target
                     src.params[c_pid] = max(c_lo, min(c_hi, c_newv))
+                    # Counter with no actual change (delta 0) would stall
+                    # melee forever, so force the parameter to its minimum.
+                    if src.params[c_pid] == c_cur:
+                        src.params[c_pid] = c_lo
 
                     c_exceeded = c_newv < c_lo or c_newv > c_hi
                     if c_exceeded:
@@ -1347,6 +1359,12 @@ def _pick_combatants(db: Session, items) -> list[Combatant]:
         .where(ItemDB.id.in_(ids))
         .options(*_unit_load_options())
     ).all()
+    # Every unit that joins a battle must have at least one ability and be
+    # linked to all parameters, so it is always a valid, armed combatant.
+    for it in fresh:
+        ensure_combat_readiness(db, it)
+    db.flush()
+    db.expire_all()
     return [Combatant.from_item(it) for it in fresh]
 
 

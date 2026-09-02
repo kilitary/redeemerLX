@@ -14,3 +14,12 @@ wheels/
 *.sqlite
 *.sqlite3
 data/
+.agents/
+.harn/
+.pyatlas/
+.ropeproject/
+.threadbridge/
+.venv/
+.vtcode/
+.zed/
+logs/
