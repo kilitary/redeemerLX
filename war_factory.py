@@ -615,6 +615,7 @@ class Combatant:
     weight: float
     is_parasite: bool
     parasite_chance: int
+    is_anti_emc: bool = False
     abilities: tuple[str, ...] = ()
     # Parametric bonuses keyed by combat stat, aggregated from the unit's
     # ability → ability_to_params links (operation + coeff per 10ms).
@@ -623,6 +624,8 @@ class Combatant:
     events: list[dict] = field(default_factory=list)
     # The unit's own material parameter values (param_id -> value).
     params: dict[int, float] = field(default_factory=dict)
+    # Human-readable parameter names (param_id -> name) for the roster dump.
+    param_names: dict[int, str] = field(default_factory=dict)
     # Per-ability param targets + linked events used by param-vs-param melee.
     abilities_data: list[dict] = field(default_factory=list)
     # Guards the battle log so a unit is only ever noted as eliminated once.
@@ -640,6 +643,32 @@ class Combatant:
         destroyed = self.abilities_data[:to_destroy]
         self.abilities_data = self.abilities_data[to_destroy:]
         return len(destroyed)
+
+    def is_armed(self) -> bool:
+        """A combatant can fight only if it has at least one ability that does
+        harm, i.e. an ability with at least one real parameter target. No
+        ability, or abilities that target nothing, means the unit is disarmed."""
+        return any(ab.get("params") for ab in self.abilities_data)
+
+    def can_damage(self) -> bool:
+        """True if this combatant is physically able to deal damage at all:
+        either it is armed (has a harmful ability) or it can land a parasite
+        strike (is a parasite whose ECM is online)."""
+        return self.is_armed() or (
+            self.is_parasite and self.parasite_chance > 0 and self.is_anti_emc
+        )
+
+    def can_target(self, partner: "Combatant") -> bool:
+        """True if this combatant has at least one ability that shares a real
+        parameter with ``partner`` (i.e. it can actually target it)."""
+        if not self.abilities_data or not partner.params:
+            return False
+        partner_pids = set(partner.params)
+        for ab in self.abilities_data:
+            for link in ab.get("params", []):
+                if link.get("param_id") in partner_pids:
+                    return True
+        return False
 
     @classmethod
     def from_item(cls, item: ItemDB) -> Combatant:
@@ -696,6 +725,10 @@ class Combatant:
                 params[row.par_id] = max(
                     -_PARAM_VALUE_LIMIT, min(_PARAM_VALUE_LIMIT, float(row.value))
                 )
+        param_names: dict[int, str] = {}
+        for row in item.item_parameters:
+            if row.par_id is not None and row.parameter is not None:
+                param_names[row.par_id] = row.parameter.par_name
 
         # Each ability exposes the parameter(s) it targets (operator + coeff)
         # and the event(s) it fires, so per-round melee can strike a shared
@@ -783,10 +816,12 @@ class Combatant:
             weight=item.weight,
             is_parasite=item.is_parasite,
             parasite_chance=item.parasite_chance,
+            is_anti_emc=item.is_anti_emc,
             abilities=abilities,
             param_bonus=bonus,
             events=events,
             params=params,
+            param_names=param_names,
             abilities_data=abilities_data,
         )
 
@@ -800,6 +835,7 @@ class ArenaResult:
     rounds: int
     log: list[str]
     survivors: list[int]
+    battle_rejected: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -810,6 +846,7 @@ class ArenaResult:
             "rounds": self.rounds,
             "log": list(self.log),
             "survivors": list(self.survivors),
+            "battle_rejected": self.battle_rejected,
         }
 
 
@@ -826,33 +863,6 @@ def _parasite_roll(attacker: Combatant) -> bool:
     if not attacker.is_parasite or attacker.parasite_chance <= 0:
         return False
     return random.randint(1, 100) <= attacker.parasite_chance
-
-
-def _attack(attacker: Combatant, defender: Combatant) -> tuple[float, str]:
-    raw = max(0.0, attacker.attack - defender.defense * 0.5)
-    jitter = random.uniform(0.8, 1.2)
-    dmg = raw * jitter
-    note = f"{attacker.name} hits {defender.name} for {dmg:.2f}"
-    if _parasite_roll(attacker):
-        bonus = max(1.0, defender.hp * 0.1)
-        dmg += bonus
-        note += f" (+ parasite +{bonus:.2f})"
-    if "polish" in attacker.abilities:
-        dmg *= 1.05
-        note += " (polish)"
-    if "harden" in attacker.abilities:
-        dmg *= 1.10
-        note += " (harden)"
-    if "weld" in attacker.abilities:
-        dmg *= 1.07
-        note += " (weld)"
-    if "shield" in defender.abilities:
-        dmg *= 0.9
-        note += " vs shield"
-    if "insulate" in defender.abilities:
-        dmg *= 0.93
-        note += " vs insulate"
-    return dmg, note
 
 
 _PARAM_VALUE_LIMIT = 1000.0
@@ -880,6 +890,16 @@ def _effective_bounds(
     if max_value is not None and -v <= float(max_value) <= v:
         hi = min(hi, float(max_value))
     return lo, hi
+
+
+def _edge_distance(value: float, link: dict) -> float:
+    """Distance from ``value`` to the nearest min/max bound of the parameter
+    being attacked (the link's own recorded min_value / max_value)."""
+    d = float("inf")
+    for bound in (link.get("min_value"), link.get("max_value")):
+        if bound is not None:
+            d = min(d, abs(value - float(bound)))
+    return d if d != float("inf") else 0.0
 
 
 def _ability_strike(
@@ -916,10 +936,40 @@ def _ability_strike(
     return max(lo, min(hi, new))
 
 
+def _roster_lines(combatants: list[Combatant]) -> list[str]:
+    """Opening description of each unit's parameters and abilities (with the
+    parameters each ability targets), prepended to the battle log."""
+    lines: list[str] = []
+    for c in combatants:
+        lines.append(f"  unit {c.name}")
+        pnames = c.param_names if c.param_names else {
+            pid: f"p{pid}" for pid in c.params
+        }
+        if c.params:
+            params_list = ", ".join(
+                f"{pnames.get(pid, f'p{pid}')}={val:.2f}" for pid, val in c.params.items()
+            )
+            lines.append(f"    parameters: {params_list}")
+        else:
+            lines.append("    parameters: none")
+        if c.abilities_data:
+            for ab in c.abilities_data:
+                targets = ", ".join(
+                    l.get("param_name") or f"p{l['param_id']}" for l in ab["params"]
+                )
+                lines.append(
+                    f"    ability {ab['name']} -> parameters [{targets}]"
+                )
+        else:
+            lines.append("    abilities: none")
+    return lines
+
+
 def _run_battle(
     team_a: list[Combatant], team_b: list[Combatant], arena: str
 ) -> ArenaResult:
     log: list[str] = []
+    battle_rejected = False
     initiative = _pick_initiative(team_a, team_b)
     order = [team_a, team_b] if initiative == 0 else [team_b, team_a]
     log.append(
@@ -927,9 +977,32 @@ def _run_battle(
         f"({team_a[0].name if team_a else 'A'} vs "
         f"{team_b[0].name if team_b else 'B'})"
     )
+    log.append("  ROSTER:")
+    log.extend(_roster_lines(team_a))
+    log.extend(_roster_lines(team_b))
     rounds = 0
     while any(c.alive for c in team_a) and any(c.alive for c in team_b):
         rounds += 1
+
+        # If every surviving unit on BOTH sides is stuck (no harmful ability
+        # AND no ECM-online parasite), the battle can never resolve.
+        a_alive = [c for c in team_a if c.alive]
+        b_alive = [c for c in team_b if c.alive]
+        if not any(c.can_damage() for c in a_alive) and not any(
+            c.can_damage() for c in b_alive
+        ):
+            battle_rejected = True
+            log.append("battle rejected")
+            break
+        # Also reject if neither side has any ability that can target the other
+        # side (no shared parameters between combatants), so the melee can never
+        # fire and there is no way to interact.
+        if not any(any(a.can_target(b) for b in b_alive) for a in a_alive) and not any(
+            any(b.can_target(a) for a in a_alive) for b in b_alive
+        ):
+            battle_rejected = True
+            log.append("battle rejected")
+            break
         for team in order:
             attackers = [c for c in team if c.alive]
             defenders = [c for c in (team_b if team is team_a else team_a) if c.alive]
@@ -960,31 +1033,46 @@ def _run_battle(
 
                 # Attacker picks one shared param to strike
                 ab, link, pid = random.choice(shared)
-                base_val = link.get("base_value") or 0.0
-                delta = base_val * 0.4
-
-                # Apply alteration to defender's parameter
+                # Ability alters the value to max_value / modify_coefficient
+                # for this ability->param link.
                 lo, hi = _effective_bounds(link["min_value"], link["max_value"])
+                coefficient = link.get("coefficient") or 0.0
+                target = hi / coefficient if coefficient else hi
                 cur = partner.params[pid]
-                newv = cur + delta  # always additive for this mechanic
+                newv = target
                 partner.params[pid] = max(lo, min(hi, newv))
 
                 # Check if parameter exceeded physical bounds
                 exceeded = newv < lo or newv > hi
                 if exceeded:
-                    # Destroy this ability from attacker
+                    # Destroy the attacking ability ...
                     src.abilities_data = [a for a in src.abilities_data if a != ab]
-                    log.append(
-                        f"r{rounds} {src.name} [{ab['name']}] parameter {link['param_name']} "
-                        f"exceeded bounds ({cur:.2f}->{newv:.2f}) -- ability destroyed"
-                    )
+                    flat = f"r{rounds} MALFUNCTION {src.name} [{ab['name']}] parameter {link['param_name']} " \
+                           f"exceeded bounds ({cur:.2f}->{newv:.2f}) -- ability destroyed"
+                    # ... and disable ALL of the defender's abilities linked to
+                    # the out-of-bounds parameter (the parameter is corrupted).
+                    doomed = [
+                        a for a in partner.abilities_data
+                        if any(l["param_id"] == pid for l in a["params"])
+                    ]
+                    if doomed:
+                        for a in doomed:
+                            log.append(
+                                f"r{rounds} {partner.name} [{a['name']}] disabled via "
+                                f"out-of-bounds {link['param_name']} -- ability destroyed"
+                            )
+                        partner.abilities_data = [
+                            a for a in partner.abilities_data if a not in doomed
+                        ]
+                    log.append(flat)
 
-                # Fire event linked to the ability
-                ev_name = ab["events"][0]["name"] if ab["events"] else "event"
-                ev_rate = ab["events"][0]["rate"] if ab["events"] else 0.5
+                dst = partner.params[pid]
+                delta = dst - cur
+                edge = _edge_distance(dst, link)
                 log.append(
-                    f"r{rounds} {src.name} [{ev_name}] {ab['name']}->{link['param_name']} "
-                    f"{cur:.2f}->{partner.params[pid]:.2f} on {partner.name}"
+                    f"r{rounds} {src.name} {ab['name']}->{link['param_name']} "
+                    f"src={cur:.2f} delta={delta:+.2f} dst={dst:.2f} edge={edge:.2f} "
+                    f"on {partner.name}"
                 )
 
                 # Defender selects counter-ability (must share a param with attacker)
@@ -998,13 +1086,15 @@ def _run_battle(
 
                 if counter_shared:
                     c_ab, c_link, c_pid = random.choice(counter_shared)
-                    c_base = c_link.get("base_value") or 0.0
-                    c_delta = c_base * 0.4
+                    # Counter-ability also alters the value to
+                    # max_value / modify_coefficient for its link.
                     c_lo, c_hi = _effective_bounds(
                         c_link["min_value"], c_link["max_value"]
                     )
+                    c_coefficient = c_link.get("coefficient") or 0.0
+                    c_target = c_hi / c_coefficient if c_coefficient else c_hi
                     c_cur = src.params[c_pid]
-                    c_newv = c_cur + c_delta
+                    c_newv = c_target
                     src.params[c_pid] = max(c_lo, min(c_hi, c_newv))
 
                     c_exceeded = c_newv < c_lo or c_newv > c_hi
@@ -1012,26 +1102,50 @@ def _run_battle(
                         partner.abilities_data = [
                             a for a in partner.abilities_data if a != c_ab
                         ]
+                        # Disable ALL of the attacker's abilities linked to the
+                        # out-of-bounds parameter.
+                        doomed = [
+                            a for a in src.abilities_data
+                            if any(l["param_id"] == c_pid for l in a["params"])
+                        ]
+                        if doomed:
+                            for a in doomed:
+                                log.append(
+                                    f"r{rounds} {src.name} [{a['name']}] disabled via "
+                                    f"out-of-bounds {c_link['param_name']} -- ability destroyed"
+                                )
+                            src.abilities_data = [
+                                a for a in src.abilities_data if a not in doomed
+                            ]
                         log.append(
                             f"r{rounds} {partner.name} counter [{c_ab['name']}] parameter {c_link['param_name']} "
                             f"exceeded bounds ({c_cur:.2f}->{c_newv:.2f}) -- counter-ability destroyed"
                         )
 
-                    c_ev_name = c_ab["events"][0]["name"] if c_ab["events"] else "event"
+                    c_dst = src.params[c_pid]
+                    c_delta = c_dst - c_cur
+                    c_edge = _edge_distance(c_dst, c_link)
                     log.append(
-                        f"r{rounds} {partner.name} counter [{c_ev_name}] {c_ab['name']}->{c_link['param_name']} "
-                        f"{c_cur:.2f}->{src.params[c_pid]:.2f} on {src.name}"
+                        f"r{rounds} {partner.name} counter {c_ab['name']}->{c_link['param_name']} "
+                        f"src={c_cur:.2f} delta={c_delta:+.2f} dst={c_dst:.2f} edge={c_edge:.2f} "
+                        f"on {src.name}"
                     )
 
                 # Small HP damage from parameter stress
-                stress_dmg = min(abs(delta) * 0.05, 5.0)
+                stress_dmg = min(abs(partner.params[pid] - cur) * 0.05, 5.0)
                 if stress_dmg > 0:
                     src.hp = round(max(0.0, src.hp - stress_dmg), 3)
                     partner.hp = round(max(0.0, partner.hp - stress_dmg), 3)
 
-                # Parasite phase: combatant with no abilities but parasite_chance > 0
+                # Parasite phase: combatant with no abilities but parasite_chance > 0.
+                # A parasite only functions when ECM (anti_emc) is online.
                 for c in (src, partner):
-                    if c.alive and not c.abilities_data and c.parasite_chance > 0:
+                    if (
+                        c.alive
+                        and not c.abilities_data
+                        and c.parasite_chance > 0
+                        and c.is_anti_emc
+                    ):
                         # Parasite attack: automatic hit if parasite_roll succeeds
                         if _parasite_roll(c):
                             dmg = 10.0 + (c.parasite_chance * 0.2)
@@ -1069,17 +1183,34 @@ def _run_battle(
             if not any(c.alive for c in team_a) or not any(c.alive for c in team_b):
                 break
 
-            # Standard strike phase
+            # Standard strike phase: a unit cannot just "hit". It damages via its
+            # abilities (handled in the melee phase) or via a parasite strike,
+            # and a parasite strike only lands if the unit's ECM (anti_emc) is
+            # online.
             alive_defs = [d for d in defenders if d.alive]
             if alive_defs:
                 atk = random.choice(attackers)
                 tgt = random.choice(alive_defs)
-                dmg, note = _attack(atk, tgt)
-                tgt.hp = round(max(0.0, tgt.hp - dmg), 3)
-                log.append(f"r{rounds} {note}; {tgt.name} hp={tgt.hp:.2f}")
-                if tgt.hp <= 0 and not tgt.eliminated_logged:
-                    tgt.eliminated_logged = True
-                    log.append(f"r{rounds} {tgt.name} eliminated")
+                ecm_online = atk.is_anti_emc
+                if atk.is_parasite and atk.parasite_chance > 0 and ecm_online:
+                    if _parasite_roll(atk):
+                        dmg = 10.0 + (atk.parasite_chance * 0.2)
+                        tgt.hp = round(max(0.0, tgt.hp - dmg), 3)
+                        log.append(
+                            f"r{rounds} {atk.name} PARASITE strike ({atk.parasite_chance}% chance, ECM online) "
+                            f"hits {tgt.name} for {dmg:.2f}; {tgt.name} hp={tgt.hp:.2f}"
+                        )
+                        if tgt.hp <= 0 and not tgt.eliminated_logged:
+                            tgt.eliminated_logged = True
+                            log.append(f"r{rounds} {tgt.name} eliminated")
+                elif not atk.is_armed():
+                    log.append(
+                        f"r{rounds} DISARMED {atk.name} cannot hit -- no harmful ability"
+                    )
+                else:
+                    log.append(
+                        f"r{rounds} NO-HIT {atk.name} cannot strike -- no ECM online for parasite, abilities only"
+                    )
 
             if not any(c.alive for c in team_b) or not any(c.alive for c in team_a):
                 break
@@ -1090,7 +1221,9 @@ def _run_battle(
     survivors = [c.unit_id for c in team_a + team_b if c.hp > 0]
     loser_ids: list[int] = []
     winner: Combatant | None = None
-    if any(c.alive for c in team_a) and not any(c.alive for c in team_b):
+    if battle_rejected:
+        log.append("battle rejected")
+    elif any(c.alive for c in team_a) and not any(c.alive for c in team_b):
         winner = max((c for c in team_a if c.alive), key=lambda c: c.hp, default=None)
         loser_ids = [c.unit_id for c in team_b if not c.alive]
     elif any(c.alive for c in team_b) and not any(c.alive for c in team_a):
@@ -1107,6 +1240,115 @@ def _run_battle(
         rounds=rounds,
         log=log,
         survivors=survivors,
+        battle_rejected=battle_rejected,
+    )
+
+
+def _unit_load_options():
+    from main import ItemDB, AbilityDB, AbilityParamDB, EventDB, ParameterDB, ItemParameterDB
+    from sqlalchemy.orm import selectinload
+    return [
+        selectinload(ItemDB.subitems),
+        selectinload(ItemDB.abilities)
+        .selectinload(AbilityDB.ability_params)
+        .selectinload(AbilityParamDB.parameter),
+        selectinload(ItemDB.abilities)
+        .selectinload(AbilityDB.events),
+        selectinload(ItemDB.item_parameters)
+        .selectinload(ItemParameterDB.parameter),
+    ]
+
+
+def _pick_random(db: Session, n: int) -> list[ItemDB]:
+    from main import ItemDB
+    from sqlalchemy import select
+    ids = db.scalars(
+        select(ItemDB.id).where(ItemDB.parent_id.is_(None))
+    ).all()
+    if len(ids) < n:
+        ids = list(ids)
+    else:
+        ids = random.sample(list(ids), n)
+    if not ids:
+        return []
+    return db.scalars(
+        select(ItemDB).where(ItemDB.id.in_(ids)).options(*_unit_load_options())
+    ).all()
+
+
+def _pick_combatants(db: Session, items) -> list[Combatant]:
+    from main import ItemDB
+    from sqlalchemy import select
+    ids = [it.id for it in items]
+    if not ids:
+        return []
+    fresh = db.scalars(
+        select(ItemDB)
+        .where(ItemDB.id.in_(ids))
+        .options(*_unit_load_options())
+    ).all()
+    return [Combatant.from_item(it) for it in fresh]
+
+
+def run_random_1x1(db: Session, gen: int) -> ArenaResult | None:
+    picks = _pick_random(db, 2)
+    if len(picks) < 2:
+        return None
+    a, b = _pick_combatants(db, picks)
+    return _run_battle([a], [b], "1x1")
+
+
+def run_random_1x2(db: Session, gen: int) -> ArenaResult | None:
+    picks = _pick_random(db, 3)
+    if len(picks) < 3:
+        return None
+    a, b, c = picks
+    return _run_battle(_pick_combatants(db, [a]), _pick_combatants(db, [b, c]), "1x2")
+
+
+def run_random_2x2(db: Session, gen: int) -> ArenaResult | None:
+    picks = _pick_random(db, 4)
+    if len(picks) < 4:
+        return None
+    a, b, c, d = picks
+    return _run_battle(
+        _pick_combatants(db, [a, b]),
+        _pick_combatants(db, [c, d]),
+        "2x2",
+    )
+
+
+def run_genetic_1x1(db: Session, gen: int) -> ArenaResult | None:
+    from main import ItemDB
+    from sqlalchemy import select, desc
+    top = db.scalars(select(ItemDB).order_by(desc(ItemDB.hp)).limit(2)).all()
+    if len(top) < 2:
+        return None
+    a, b = _pick_combatants(db, top)
+    return _run_battle([a], [b], "1x1")
+
+
+def run_genetic_1x2(db: Session, gen: int) -> ArenaResult | None:
+    from main import ItemDB
+    from sqlalchemy import select, desc
+    top = db.scalars(select(ItemDB).order_by(desc(ItemDB.hp)).limit(3)).all()
+    if len(top) < 3:
+        return None
+    a, b, c = top
+    return _run_battle(_pick_combatants(db, [a]), _pick_combatants(db, [b, c]), "1x2")
+
+
+def run_genetic_2x2(db: Session, gen: int) -> ArenaResult | None:
+    from main import ItemDB
+    from sqlalchemy import select, desc
+    top = db.scalars(select(ItemDB).order_by(desc(ItemDB.hp)).limit(4)).all()
+    if len(top) < 4:
+        return None
+    a, b, c, d = top
+    return _run_battle(
+        _pick_combatants(db, [a, b]),
+        _pick_combatants(db, [c, d]),
+        "2x2",
     )
 
 
@@ -1191,15 +1433,11 @@ def run_tick(
         },
     )
 
-    # 5) Combat arena — random + genetic, on all three map sizes
+    # 5) Combat arena — 1x1 only for now (random + genetic)
     battles: list[ArenaResult] = []
     for fn in (
         run_random_1x1,
-        run_random_1x2,
-        run_random_2x2,
         run_genetic_1x1,
-        run_genetic_1x2,
-        run_genetic_2x2,
     ):
         result = fn(db, gen)
         if result is not None:

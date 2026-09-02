@@ -9,6 +9,7 @@ function initWarFactory() {
     const tbody = $("wf-leaderboard-body");
     let timer = null;
     let stopping = false;
+    let lastTick = null;
 
     function readParams() {
         return {
@@ -106,6 +107,103 @@ function initWarFactory() {
             " · battles=<span class='num-ok'>" + t.battles.length + "</span>";
     }
 
+    function esc(s) {
+        const div = document.createElement("div");
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    // Classify one battle-log line into {icon, cls, title, body}.
+    function classifyLogLine(line) {
+        // Strip the leading "r<rounds> " so each line starts with the action.
+        let md = /^r(\d+)\s+(.*)$/.exec(line.trim());
+        const rounds = md ? md[1] : null;
+        let text = md ? md[2] : line.trim();
+
+        if (text === "ROSTER:") return { icon: "📜", cls: "wf-roster", title: text, body: "" };
+        if (/^unit /.test(text)) return { icon: "🤖", cls: "wf-roster", title: text, body: "" };
+        if (/^parameters:/.test(text)) return { icon: "⚙️", cls: "wf-roster-sub", title: text, body: "" };
+        if (/^ability .*->/.test(text)) return { icon: "🔧", cls: "wf-roster-sub", title: text, body: "" };
+        if (/^abilities:/.test(text)) return { icon: "🔋", cls: "wf-roster-sub", title: text, body: "" };
+        if (/^battle rejected$/.test(text)) return { icon: "⛔", cls: "wf-reject", title: text, body: "" };
+        if (/^draw$/.test(text)) return { icon: "🤝", cls: "wf-neu", title: text, body: "" };
+        if (/^[A-Z]: /.test(text) && /initiative/.test(text)) return { icon: "🏁", cls: "wf-init", title: text, body: "" };
+
+        const tail = rounds ? " r" + rounds : "";
+        if (/PARASITE strike/.test(text)) return { icon: "🦠", cls: "wf-para", title: text.replace(/PARASITE/, "").trim(), body: "", rounds: tail };
+        if (/MALFUNCTION/.test(text)) return { icon: "💥", cls: "wf-malf", title: text, body: "" };
+        if (/DISARMED/.test(text)) return { icon: "🔒", cls: "wf-disarm", title: text, body: "" };
+        if (/NO-HIT/.test(text)) return { icon: "🛑", cls: "wf-disarm", title: text, body: "" };
+        if (/eliminated/.test(text)) return { icon: "💀", cls: "wf-elim", title: text, body: "" };
+        if (/ disabled via /.test(text)) return { icon: "🔌", cls: "wf-disarm", title: text, body: "" };
+        if (/ counter /.test(text)) return { icon: "🔁", cls: "wf-counter", title: text, body: "" };
+        if (/src=.*delta=.*dst=.*edge=/.test(text)) return { icon: "🎯", cls: "wf-strike", title: text, body: "" };
+        if (/exceeded bounds/.test(text)) return { icon: "🚨", cls: "wf-malf", title: text, body: "" };
+
+        // Fall back to a plain row.
+        return { icon: "•", cls: "wf-raw", title: text, body: "" };
+    }
+
+    function renderBattle(b) {
+        const head = document.createElement("div");
+        head.className = "wf-battle-head " + (b.battle_rejected ? "wf-reject" : (b.winner_name ? "wf-win" : "wf-neu"));
+        const status = b.battle_rejected
+            ? "⛔ rejected"
+            : (b.winner_name
+                ? "🏆 " + esc(b.winner_name)
+                : "🤝 draw");
+        head.innerHTML =
+            esc(b.map) + " · " + status +
+            " · <span class='wf-rounds'>" + b.rounds + " round" + (b.rounds === 1 ? "" : "s") + "</span>";
+
+        const body = document.createElement("div");
+        body.className = "wf-battle-body";
+        (b.log || []).forEach((line) => {
+            const { icon, cls, title, body: _b } = classifyLogLine(line);
+            const row = document.createElement("div");
+            row.className = "wf-line " + cls;
+            const ic = document.createElement("span");
+            ic.className = "wf-ic";
+            ic.textContent = icon;
+            const tx = document.createElement("span");
+            tx.textContent = title;
+            row.appendChild(ic);
+            row.appendChild(tx);
+            body.appendChild(row);
+        });
+
+        const wrap = document.createElement("div");
+        wrap.className = "wf-battle";
+        wrap.appendChild(head);
+        wrap.appendChild(body);
+        return wrap;
+    }
+
+    function renderLastTickDetail(j, jsonMode) {
+        const el = $("wf-last");
+        if (!j) { el.innerHTML = ""; return; }
+        if (jsonMode) {
+            el.innerHTML = esc(JSON.stringify(j, null, 2));
+            el.classList.add("wf-pre");
+            return;
+        }
+
+        el.classList.remove("wf-pre");
+        const container = document.createElement("div");
+        container.className = "wf-log";
+        const header = document.createElement("div");
+        header.className = "wf-tick-head";
+        header.innerHTML =
+            "🔄 gen <span class='num-ok'>" + j.generation + "</span>" +
+            " · built <span class='num-ok'>" + j.built + "</span>" +
+            " · joined <span class='num-neu'>" + j.joined + "</span>" +
+            " · mutated <span class='num-neu'>" + j.mutated_props + "</span>" +
+            " · tested <span class='num-neu'>" + j.tested.ok + "/" + j.tested.sample + "</span>";
+        container.appendChild(header);
+        (j.battles || []).forEach((b) => container.appendChild(renderBattle(b)));
+        el.appendChild(container);
+    }
+
     function renderAuto(a) {
         if (!a) return;
         const st = $("wf-auto-state");
@@ -139,7 +237,8 @@ function initWarFactory() {
         const url = "/war/factory/tick?" + buildQuery(p);
         const r = await fetch(url, { method: "POST" });
         const j = await r.json();
-        lastEl.textContent = JSON.stringify(j, null, 2);
+        lastTick = j;
+        renderLastTickDetail(j, $("wf-json-mode").checked);
         statusEl.textContent = "idle";
         await refreshState();
     }
@@ -154,7 +253,8 @@ function initWarFactory() {
             const url = "/war/factory/tick?" + buildQuery(p);
             const r = await fetch(url, { method: "POST" });
             const j = await r.json();
-            lastEl.textContent = JSON.stringify(j, null, 2);
+            lastTick = j;
+            renderLastTickDetail(j, $("wf-json-mode").checked);
             // Advance seed so a fixed seed yields distinct ticks.
             if (p.seed != null) {
                 p.seed = (p.seed * 1103515245 + 12345) & 0x7FFFFFFF;
@@ -170,6 +270,9 @@ function initWarFactory() {
     $("wf-stop").addEventListener("click", () => {
         stopping = true;
         statusEl.textContent = "stopping…";
+    });
+    $("wf-json-mode").addEventListener("change", () => {
+        renderLastTickDetail(lastTick, $("wf-json-mode").checked);
     });
 
     async function autoStart() {

@@ -324,3 +324,74 @@
     min-width: 90px;
     word-break: break-word;
 }
+
+/* Wide table per distinct ability */
+.cc .tf-ability {
+    margin-bottom: 20px;
+    border: 1px solid var(--cc-line);
+    background: linear-gradient(180deg, #1a2017, #141a12);
+}
+
+.cc .tf-ability h3 {
+    color: var(--cc-red-bright);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: .82rem;
+    margin: 0;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--cc-line);
+    background: #141a11;
+}
+
+.cc .tf-ability h3::before {
+    content: "◤ ";
+    color: var(--cc-green);
+}
+
+.cc .tf-desc {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--cc-line);
+    font-size: .78rem;
+    line-height: 1.4;
+}
+
+.cc .tf-desc-en {
+    color: var(--cc-green);
+}
+
+.cc .tf-desc-ru {
+    color: var(--cc-txt);
+    opacity: .8;
+}
+
+.cc .tf-wide {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cc .tf-wide th,
+.cc .tf-wide td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--cc-line);
+    border-right: 1px solid var(--cc-line);
+    white-space: nowrap;
+}
+
+.cc .tf-wide thead th {
+    background: #141a11;
+    color: var(--cc-green);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: .72rem;
+}
+
+.cc .tf-wide td.op-label {
+    color: var(--cc-amber);
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    background: rgba(126,242,154,.04);
+    width: 90px;
+    text-align: right;
+}

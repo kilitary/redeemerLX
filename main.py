@@ -19,7 +19,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Column, ForeignKey, Table, create_engine, event, select, text
+from sqlalchemy import Column, ForeignKey, Table, create_engine, event, or_, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import (
@@ -149,7 +149,7 @@ class Version:
         return self.__str__()
 
 
-APP_VERSION = str(Version("1.34.21"))
+APP_VERSION = str(Version("1.36.9"))
 logger.info(f"App version: {APP_VERSION}")
 templates.env.globals["app_version"] = APP_VERSION
 
@@ -1846,8 +1846,13 @@ def items_filter(
     return filt
 
 
+def _is_root_item():
+    """True for top-level units: parent_id is 0, empty, or NULL."""
+    return or_(ItemDB.parent_id.is_(None), ItemDB.parent_id == 0, ItemDB.parent_id == "")
+
+
 def filtered_items_select(filt: ItemFilter) -> select:
-    stmt = select(ItemDB).where(ItemDB.parent_id.is_(None))
+    stmt = select(ItemDB).where(_is_root_item())
     if filt.q:
         stmt = stmt.where(ItemDB.name.ilike(f"%{filt.q}%"))
     if filt.min_price is not None:
@@ -2140,7 +2145,7 @@ def read_root() -> dict[str, str]:
 def ui_warehouse(request: Request, db: Session = Depends(get_db)):
     profile_step(request, "query")
     items = db.scalars(
-        select(ItemDB).where(ItemDB.parent_id.is_(None)).order_by(ItemDB.name)
+        select(ItemDB).where(_is_root_item()).order_by(ItemDB.name)
     ).all()
     mutated_id = request.query_params.get("mutated")
     mutated = None
@@ -3422,7 +3427,7 @@ def ui_events(
 @app.get("/api/units", response_model=list[dict])
 def api_list_units(db: Session = Depends(get_db)):
     rows = db.scalars(
-        select(ItemDB).where(ItemDB.parent_id.is_(None)).order_by(ItemDB.name)
+        select(ItemDB).where(_is_root_item()).order_by(ItemDB.name)
     ).all()
     return [{"id": r.id, "name": r.name} for r in rows]
 
@@ -3469,6 +3474,8 @@ def api_unit_report(item_id: int, db: Session = Depends(get_db)):
                     "kind": "ability",
                     "ability_id": ab.id,
                     "ability": ab.name,
+                    "description": ab.description,
+                    "description_ru": ab.description_ru,
                     "param": p.par_name if p else "",
                     "param_category": p.par_category if p else "",
                     "operation": ap.operation,
@@ -3484,6 +3491,8 @@ def api_unit_report(item_id: int, db: Session = Depends(get_db)):
                     "kind": "ability",
                     "ability_id": ab.id,
                     "ability": ab.name,
+                    "description": ab.description,
+                    "description_ru": ab.description_ru,
                     "param": "",
                     "param_category": "",
                     "operation": "",
