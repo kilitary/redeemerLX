@@ -1,0 +1,326 @@
+/* Test Facility page styles - extracted from test_facility.html */
+
+.cc {
+    --cc-olive: #161b13;
+    --cc-olive2: #20261c;
+    --cc-line: #3a4436;
+    --cc-green: #a8e6a0;
+    --cc-green-bright: #7ef29a;
+    --cc-red: #ff4d4d;
+    --cc-red-bright: #ff7a7a;
+    --cc-amber: #ffb454;
+    --cc-txt: #c6d0bd;
+    position: relative;
+    font-family: "Consolas", "Menlo", "DejaVu Sans Mono", monospace;
+    color: var(--cc-txt);
+}
+
+.cc .scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px);
+}
+
+.cc .grid-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(1200px 600px at 50% -10%, rgba(126,242,154,.06), transparent 60%),
+        repeating-linear-gradient(0deg, rgba(126,242,154,.04) 0 1px, transparent 1px 44px),
+        repeating-linear-gradient(90deg, rgba(126,242,154,.04) 0 1px, transparent 1px 44px);
+}
+
+.cc > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Tactical header */
+.cc .hud-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    border: 1px solid var(--cc-line);
+    background: linear-gradient(180deg, #1b2117, #13170f);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+}
+
+.cc .hud-title {
+    color: var(--cc-red-bright);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 700;
+    font-size: 1.15rem;
+    text-shadow: 0 0 12px rgba(255,77,77,.45);
+}
+
+.cc .hud-sub {
+    color: var(--cc-green);
+    letter-spacing: 1px;
+    font-size: .78rem;
+    opacity: .85;
+}
+
+.cc .hud-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cc .blink {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--cc-red);
+    box-shadow: 0 0 10px var(--cc-red);
+    animation: cc-blink 1.1s steps(2) infinite;
+}
+
+@keyframes cc-blink {
+    50% { opacity: 0; }
+}
+
+.cc .radar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    position: relative;
+    border: 2px solid var(--cc-line);
+    overflow: hidden;
+    background: radial-gradient(circle, rgba(126,242,154,.08), transparent 70%);
+}
+
+.cc .radar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: conic-gradient(from 0deg, rgba(126,242,154,.55), transparent 55deg);
+    animation: cc-radar 2.2s linear infinite;
+}
+
+.cc .radar::after {
+    content: "";
+    position: absolute;
+    inset: 26%;
+    border-radius: 50%;
+    border: 1px solid var(--cc-line);
+}
+
+@keyframes cc-radar {
+    to { transform: rotate(360deg); }
+}
+
+.cc h2 {
+    color: var(--cc-green);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: .95rem;
+    margin: 0 0 12px;
+    border-bottom: 1px solid var(--cc-line);
+    padding-bottom: 6px;
+}
+
+/* Framed cards with corner brackets */
+.cc .card {
+    position: relative;
+    background: linear-gradient(180deg, #1a2017, #141a12);
+    border: 1px solid var(--cc-line);
+    box-shadow: none;
+}
+
+.cc .card::before,
+.cc .card::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+}
+
+.cc .card::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid var(--cc-red);
+    border-left: 2px solid var(--cc-red);
+}
+
+.cc .card::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid var(--cc-red);
+    border-right: 2px solid var(--cc-red);
+}
+
+.cc .filters label {
+    color: var(--cc-green);
+    letter-spacing: .5px;
+}
+
+.cc input[type="number"] {
+    background: #0c100b;
+    color: var(--cc-txt);
+    border: 1px solid var(--cc-line);
+}
+
+.cc input[type="number"]:focus {
+    border-color: var(--cc-green);
+    outline: none;
+}
+
+.cc .btn {
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 0;
+    border: 1px solid var(--cc-line);
+}
+
+.cc .btn-primary {
+    background: var(--cc-olive2);
+    color: var(--cc-green-bright);
+    border-color: var(--cc-green);
+}
+
+.cc .btn-primary:hover {
+    background: #2a3326;
+}
+
+.cc .btn-tonal {
+    background: var(--cc-olive);
+    color: var(--cc-txt);
+    border-color: var(--cc-line);
+}
+
+.cc .btn-tonal:hover {
+    background: var(--cc-olive2);
+}
+
+.cc table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.cc thead th {
+    background: #141a11;
+    color: var(--cc-green);
+    border-bottom: 2px solid var(--cc-red);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: .72rem;
+    padding: 8px 10px;
+}
+
+.cc tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--cc-line);
+    vertical-align: top;
+}
+
+.cc tbody tr.ok-row {
+    border-left: 3px solid var(--cc-green);
+}
+
+.cc tbody tr.bad-row {
+    border-left: 3px solid var(--cc-red);
+    background: rgba(255,77,77,.05);
+}
+
+.cc tbody tr:hover {
+    background: rgba(126,242,154,.05);
+}
+
+.cc a {
+    color: var(--cc-green-bright);
+}
+
+.cc .badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border: 1px solid;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: .7rem;
+}
+
+.cc .badge-ok {
+    color: var(--cc-green-bright);
+    border-color: var(--cc-green);
+}
+
+.cc .badge-bad {
+    color: var(--cc-red-bright);
+    border-color: var(--cc-red);
+}
+
+.cc ul {
+    margin: 0;
+    padding-left: 16px;
+    color: var(--cc-amber);
+    font-size: .82rem;
+}
+
+.cc .muted {
+    color: #8a967f;
+}
+
+.cc .empty {
+    color: aquamarine;
+    font-variant: small-caps;
+}
+
+/* Unit inspector additions */
+.cc .tf-select {
+    background: #0c100b;
+    color: var(--cc-txt);
+    border: 1px solid var(--cc-line);
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: .85rem;
+    min-width: 260px;
+}
+
+.cc .tf-select:focus {
+    border-color: var(--cc-green);
+    outline: none;
+}
+
+.cc .table-scroll {
+    overflow-x: auto;
+}
+
+.cc .tf-table th,
+.cc .tf-table td {
+    white-space: nowrap;
+}
+
+.cc .operation {
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.cc .operation.op-add {
+    color: var(--cc-green-bright);
+}
+
+.cc .operation.op-multiply {
+    color: var(--cc-amber);
+}
+
+.cc .operation.op-set {
+    color: var(--cc-red-bright);
+}
+
+.cc .tf-table td:nth-child(3),
+.cc .tf-table th:nth-child(3) {
+    white-space: normal;
+    min-width: 90px;
+    word-break: break-word;
+}

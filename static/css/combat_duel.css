@@ -1,0 +1,7 @@
+/* Combat Duel page styles - extracted from combat_duel.html */
+
+@keyframes fastBlink {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+}

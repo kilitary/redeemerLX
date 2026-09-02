@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{% block title %}Dark Members CP-2 partial secret items block{% endblock %}</title>
+        <link rel="stylesheet" href="/static/css/base.css?v={{ app_version }}" />
+        <link rel="stylesheet" href="/static/css/nav_overlay.css?v={{ app_version }}" />
+    </head>
+    <body>
+        <header class="app-bar">
+            <span class="title"
+                >Jesus Christ Nuclear Revenge D-Days Panel (v{{ app_version }})</span
+            >
+            <a href="{{ url_for('ui_index') }}" class="nav-link"
+                ><svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <rect x="3" y="3" width="7" height="9" rx="1" />
+                    <rect x="14" y="3" width="7" height="5" rx="1" />
+                    <rect x="14" y="12" width="7" height="9" rx="1" />
+                    <rect x="3" y="16" width="7" height="5" rx="1" /></svg
+                ><span>Items</span></a
+            >
+            <a href="{{ url_for('ui_item_new') }}" class="nav-link"
+                ><svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" /></svg
+                ><span>New item</span></a
+            >
+            <a href="{{ url_for('ui_test_facility') }}" class="nav-link"
+                ><svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                    /></svg
+                ><span>Test facility</span></a
+            >
+            <a href="{{ url_for('ui_combat_duel') }}" class="nav-link"
+                ><svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M7 17l5 2.5 5-2.5" /></svg
+                ><span>Combat duel</span></a
+            >
+            <a href="{{ url_for('ui_warehouse') }}" class="nav-link"
+                ><svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                    />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" /></svg
+                ><span>Warehouse</span></a
+            >
+            <a href="{{ url_for('ui_abilities') }}" class="nav-link"
+                ><svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                    /></svg
+                ><span>Abilities</span></a
+            >
+            <a href="{{ url_for('ui_events') }}" class="nav-link"
+                ><svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg
+                ><span>Events</span></a
+            >
+            <a href="{{ url_for('ui_war_factory') }}" class="nav-link"
+                ><svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <path d="M8 21h8" />
+                    <path d="M12 17v4" /></svg
+                ><span>War factory</span></a
+            >
+            <a href="/docs" class="nav-link"
+                ><svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                    />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" /></svg
+                ><span>API docs</span></a
+            >
+        </header>
+        <div
+            class="hero"
+            id="hero"
+            role="img"
+            aria-label="Random ASCII art"
+        ></div>
+        <div id="lightning" aria-hidden="true"></div>
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <a href="{{ url_for('ui_index') }}" class="crumb">Home</a>
+            {% block breadcrumbs %}{% endblock %}
+            <span class="crumb-path" title="{{ request.url }}"
+                >{{ request.url.path }}</span
+            >
+        </nav>
+        <main>
+            {% if error %}
+            <div class="banner">{{ error }}</div>
+            {% endif %} {% block content %}{% endblock %}
+        </main>
+        <canvas id="matrix" aria-hidden="true"></canvas>
+        <canvas id="nato" aria-hidden="true"></canvas>
+        <canvas id="ion-storm" aria-hidden="true"></canvas>
+        <div id="reveal" aria-hidden="true"></div>
+        <div id="tv" class="tv" aria-hidden="true">
+            <div class="tv-screen"><div class="tv-scanlines"></div></div>
+            <div class="tv-label">TEST</div>
+        </div>
+        <div id="nav-overlay" aria-hidden="true"></div>
+        <div id="greek" class="greek-word" aria-hidden="true"></div>
+        <script src="/static/js/base.js?v={{ app_version }}"></script>
+        <script src="/static/js/profile.js?v={{ app_version }}"></script>
+        <script src="/static/js/nav_overlay.js?v={{ app_version }}"></script>
+    </body>
+</html>

@@ -1,0 +1,36 @@
+{% extends "base.html" %} {% block title %}Combat Duel{% endblock %} {% block
+content %}
+<script src="/static/js/combat_duel.js?v={{ app_version }}"></script>
+<div class="page-header">
+    <div>
+        <h1>Combat Tunnel</h1>
+        <div class="muted">Challenge units to reversed flashback combat.</div>
+    </div>
+    <div class="actions">
+        <a class="btn btn-tonal" href="{{ url_for('ui_index') }}">Back</a>
+    </div>
+</div>
+<div class="card">
+    <p class="empty">
+        Programmed units forced to combat duel under tuberized instruction
+        <table>
+            <tr>
+                <td>
+                    <p>Жила‑была в волшебном лесу девочка по имени Алиса. Однажды она нашла блестящий клютч, который светился золотым; и не только светом.</p>
+                </td>
+                <td>
+                    <p>Алиса отключила им древнюю дверь, и перед ними возникло королевство, где живут, и горящие животные с летающие ми цвет AMI.</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <p>В этом королевстве она встретила доброго зайца, который подарил ей карту сокровищ, а также волшебный шляпу, исполняющую желания.</p>
+                </td>
+                <td>
+                    <p>Следуя карте, Алиса прошла через яркие поля, пересекла реку из радуги и нашла сокровище — сундук, полный сказочных историй, которые она смогла рассказывать каждому.</p>
+                </td>
+            </tr>
+        </table>
+    </p>
+</div>
+{% endblock %}

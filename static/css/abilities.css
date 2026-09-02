@@ -1,0 +1,6 @@
+.ab-layout{display:grid;grid-template-columns:340px 1fr;gap:1rem}
+#ab-grid{max-height:60vh;overflow:auto;display:flex;flex-direction:column;gap:.25rem}
+.ab-item{padding:.4rem .6rem;border:1px solid var(--md-outline-variant);cursor:pointer}
+.ab-item.active{background:var(--md-primary-container);border-color:var(--md-primary)}
+.ab-edit{display:flex;flex-direction:column;gap:.4rem;margin-top:.8rem}
+#ap-body td{font-size:.8rem}

@@ -1,0 +1,91 @@
+/* War Factory page styles - extracted from war_factory.html */
+
+.wf-stage {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    align-items: center;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .25rem .6rem;
+    border-radius: var(--md-shape-full);
+    font-size: .8rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.chip-build {
+    color: #7ef29a;
+    border-color: rgba(126,242,154,.4);
+    background: rgba(126,242,154,.08);
+}
+
+.chip-join {
+    color: #4aa8ff;
+    border-color: rgba(74,168,255,.4);
+    background: rgba(74,168,255,.08);
+}
+
+.chip-props {
+    color: #d8e39b;
+    border-color: rgba(216,227,155,.4);
+    background: rgba(216,227,155,.08);
+}
+
+.chip-test {
+    color: #ffb86b;
+    border-color: rgba(255,184,107,.4);
+    background: rgba(255,184,107,.08);
+}
+
+.chip-combat {
+    color: #ff6b6b;
+    border-color: rgba(255,107,107,.4);
+    background: rgba(255,107,107,.08);
+}
+
+.dot {
+    display: inline-block;
+    width: .65rem;
+    height: .65rem;
+    border-radius: 50%;
+    margin-right: .3rem;
+    vertical-align: middle;
+}
+
+.dot-on {
+    background: #7ef29a;
+    box-shadow: 0 0 8px rgba(126,242,154,.9);
+    animation: wf-pulse 1.4s infinite;
+}
+
+.dot-off {
+    background: var(--md-outline);
+}
+
+.dot-err {
+    background: #ff3b30;
+    box-shadow: 0 0 8px rgba(255,59,48,.9);
+}
+
+@keyframes wf-pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: .35; }
+}
+
+.num-ok { color: #7ef29a; font-weight: 700; }
+.num-bad { color: #ff3b30; font-weight: 700; }
+.num-neu { color: #4aa8ff; font-weight: 700; }
+
+.rank-1 { color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,.5); }
+.rank-2 { color: #c0c8cf; }
+.rank-3 { color: #cd7f32; }
+
+.wf-title-icon {
+    font-size: 1.3rem;
+    vertical-align: -0.1em;
+}

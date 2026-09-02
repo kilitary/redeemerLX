@@ -1,0 +1,151 @@
+{% extends "base.html" %} {% block title %}{{ item.name }}{% endblock %} {% block
+content %}
+<div class="page-header">
+    <div>
+        <h1>{{ item.name }}</h1>
+        <div class="muted">
+            ${{ "%.2f" | format(item.price) }} · Qty {{ item.quantity }} · {% if
+            item.is_offer %}<span class="chip">Offer</span>{% else %}Regular{%
+            endif %} · ID {{ item.id }} · Rev {{ item.revision }}
+        </div>
+        <div class="muted">
+            Color: {{ item.color or "—" }} · Size: {{ item.size or "—" }} ·
+            Weight: {% if item.weight %}{{ "%.2f" | format(item.weight) }} kg{%
+            else %}—{% endif %} · HP: {% if item.hp %}{{ item.hp }}{% else %}—{%
+            endif %} · Anti-EMC: {{ "yes" if item.is_anti_emc else "no" }} ·
+            Proof: {{ "yes" if item.is_proof else "no" }} · Water resistant: {{
+            "yes" if item.water_resistant else "no" }} · Oil: {% if item.oil
+            %}{{ "%.2f" | format(item.oil) }} kg{% else %}—{% endif %} ·
+            Self-destroy: {{ "yes" if item.self_desentry else "no" }} · Parasite
+            chance: {{ item.parasite_chance or 0 }}%
+        </div>
+    </div>
+    <div class="actions">
+        <a class="btn btn-tonal" href="{{ url_for('ui_index') }}">Back</a>
+        <a
+            class="btn btn-primary"
+            href="{{ url_for('ui_item_edit', item_id=item.id) }}"
+            >Edit</a
+        >
+        <form
+            method="post"
+            action="{{ url_for('ui_item_delete', item_id=item.id) }}"
+            onsubmit="return confirm('Delete this item?');"
+        >
+            <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
+            <button type="submit" class="btn btn-error">Delete</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Abilities</h2>
+    {% if item.abilities %}
+    <div class="abilities-list">
+        {% for a in item.abilities %}
+        <span
+            class="ability-chip"
+            title="{{ a.description }} · {{ a.description_ru }}"
+            >{{ a.name }}</span
+        >
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty">No abilities assigned.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Subitems</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Quantity</th>
+                <th>Rev</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="subitems-body" data-item-id="{{ item.id }}">
+            {% for s in item.subitems if not s.is_parasite %}
+            <tr data-id="{{ s.id }}">
+                <td>{{ s.name }}</td>
+                <td>{{ s.quantity }}</td>
+                <td>{{ s.revision }}</td>
+                <td>
+                    <div class="actions">
+                        <a
+                            class="btn btn-tonal"
+                            href="{{ url_for('ui_subitem_detail', item_id=item.id, subitem_id=s.id) }}"
+                        >
+                            Detail
+                        </a>
+                        <form
+                            method="post"
+                            action="{{ url_for('ui_subitem_delete', item_id=item.id, subitem_id=s.id) }}"
+                            onsubmit="return confirm({{ s.name | tojson }});"
+                        >
+                            <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
+                            <button type="submit" class="btn btn-error">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="empty">No subitems yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Parasites</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Quantity</th>
+                <th>Rev</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="parasites-body" data-item-id="{{ item.id }}">
+            {% for s in item.subitems if s.is_parasite %}
+            <tr data-id="{{ s.id }}">
+                <td>{{ s.name }}</td>
+                <td>{{ s.quantity }}</td>
+                <td>{{ s.revision }}</td>
+                <td>
+                    <div class="actions">
+                        <a
+                            class="btn btn-tonal"
+                            href="{{ url_for('ui_subitem_detail', item_id=item.id, subitem_id=s.id) }}"
+                        >
+                            Detail
+                        </a>
+                        <form
+                            method="post"
+                            action="{{ url_for('ui_subitem_delete', item_id=item.id, subitem_id=s.id) }}"
+                            onsubmit="return confirm({{ s.name | tojson }});"
+                        >
+                            <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
+                            <button type="submit" class="btn btn-error">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="empty">No parasites yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

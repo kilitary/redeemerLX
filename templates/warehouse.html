@@ -1,0 +1,76 @@
+{% extends "base.html" %} {% block title %}Warehouse{% endblock %} {% block
+content %} {% block breadcrumbs %}<a
+    class="crumb"
+    href="{{ url_for('ui_index') }}"
+    >Items</a
+>{% endblock %}
+<div class="page-header">
+    <div>
+        <h1>Destroyhouser PosiX</h1>
+        <div class="muted">
+            Storage and logistics management under overnoised map.
+        </div>
+    </div>
+    <div class="actions">
+        <a class="btn btn-tonal" href="{{ url_for('ui_index') }}">Back</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Slut selection panel</h2>
+    <p class="muted">Pick 2–255 units to mutate into one new hybrid unit.</p>
+    <div class="mutate-count">
+        <label for="slut-count">Unit count</label>
+        <input type="number" id="slut-count" min="2" max="255" value="2" />
+    </div>
+    <form
+        method="post"
+        action="{{ url_for('ui_warehouse_mutate') }}"
+        id="mutate-form"
+    >
+        <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
+        <div class="mutate-grid" id="mutate-grid"></div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Mutate</button>
+        </div>
+    </form>
+    {% if mutated %}
+    <div class="mutated-result">
+        <h3>Mutation result</h3>
+        <p><strong>{{ mutated.name }}</strong></p>
+        <p class="muted">
+            Price ${{ "%.2f" | format(mutated.price) }} · Qty {{
+            mutated.quantity }} · Weight {{ "%.2f" | format(mutated.weight) }}
+            kg · HP {{ mutated.hp }} · Oil {{ "%.2f" | format(mutated.oil) }} kg
+            · Rev {{ mutated.revision or 1 }}
+        </p>
+        <p class="muted">
+            {% if mutated.is_anti_emc %}Anti-EMC · {% endif %} {% if
+            mutated.is_proof %}Proof · {% endif %} {% if mutated.water_resistant
+            %}Water resistant · {% endif %} {% if mutated.is_parasite
+            %}Parasite{% endif %}
+        </p>
+        {% if effects_log %}
+        <h4>Fired effects</h4>
+        <ul class="effects-log">
+            {% for fx in effects_log %}
+            <li>
+                <strong>{{ fx.name }}</strong> — {{ fx.en }}
+                <span class="ability-ru">({{ fx.ru }})</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        <a
+            class="btn btn-tonal"
+            href="{{ url_for('ui_item_detail', item_id=mutated.id) }}"
+            >View unit</a
+        >
+    </div>
+    {% endif %}
+</div>
+<script id="warehouse-data" type="application/json">
+    {{ item_options | tojson }}
+</script>
+<script src="/static/js/warehouse.js?v={{ app_version }}"></script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %} {% block title %}Test Facility{% endblock %} {% block
+content %}
+<link rel="stylesheet" href="/static/css/test_facility.css?v={{ app_version }}" />
+<div class="cc">
+    <div class="grid-bg"></div>
+    <div class="scanlines"></div>
+
+    <div class="hud-bar">
+        <span class="hud-title">▚ Test Facility</span>
+        <span class="hud-sub"
+            >Unit parameter inspector · abilities, params &amp; items</span
+        >
+        <div class="hud-right">
+            <span class="muted" id="tf-threat">STANDBY</span>
+            <div class="radar" title="Radar"></div>
+            <span class="blink"></span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>▸ Select unit</h2>
+        <form class="filters" id="tf-form">
+            <label
+                >Unit
+                <select id="tf-unit" class="tf-select" placeholder="select a unit…">
+                    <option value="" disabled selected>— select a unit —</option>
+                </select>
+            </label>
+            <button type="button" class="btn btn-primary" id="tf-inspect">
+                ▸ Inspect
+            </button>
+        </form>
+        <p class="muted" id="tf-summary">Awaiting unit selection.</p>
+    </div>
+
+    <div class="card">
+        <h2>▸ Unit parameters</h2>
+        <div class="table-scroll">
+            <table class="tf-table">
+                <thead>
+                    <tr>
+                        <th>Ability</th>
+                        <th>Param</th>
+                        <th>Operation</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody id="tf-body">
+                    <tr>
+                        <td colspan="4" class="empty">Select a unit above.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/test_facility.js?v={{ app_version }}"></script>
+{% endblock %}

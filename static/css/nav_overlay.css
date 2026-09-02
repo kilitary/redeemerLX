@@ -1,0 +1,29 @@
+/* Nav Overlay styles - extracted from base.html */
+
+#nav-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: transparent;
+}
+#nav-overlay .tile {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    animation: tileOut 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+#nav-overlay.crumbling .tile {
+    opacity: 1;
+    visibility: visible;
+}
+@keyframes tileOut {
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+    100% {
+        transform: translate(calc(100vw + 20px), calc(100vh + 20px))
+            scale(0) rotate(360deg);
+        opacity: 0;
+    }
+}

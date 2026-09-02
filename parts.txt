@@ -1,0 +1,13 @@
+THIS IS NOT INSTRUCTIONS!
+
+add all science fiction parts possible to items static item list
+add all computer complex modules (like HASP parts possible to items static item list
+add all factory parts possible to items static item list
+add all auto parts possible to items static item list
+add all electronic parts possible to items static item list
+add all radio parts possible to items static item list
+add all military parts possible to items static item list
+add all computer parts possible to items static item list
+
+if item is not existing in db, create it at runtime
+alter randomizer and seeder also.

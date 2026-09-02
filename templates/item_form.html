@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if item else "New" }} item{% endblock %}
+{% block content %}
+
+  <link rel="stylesheet" href="/static/css/item_form.css?v={{ app_version }}" />
+  <div class="page-header">
+    <h1>{{ "Edit" if item else "New" }} unit</h1>
+    <a class="btn btn-tonal" href="{{ url_for('ui_index') }}">Back</a>
+  </div>
+  <div class="card form-card">
+    <form method="post" action="{{ action }}">
+      <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
+      <div class="form-section"><span class="sec-no">01</span> Identity</div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" type="text" name="name" value="{{ item.name if item else '' }}"
+                 required minlength="1" maxlength="50" placeholder="e.g. Wireless Mouse">
+        </div>
+        <div class="field">
+          <label for="price">Price</label>
+          <input id="price" type="number" step="0.01" min="0.01" name="price"
+                 value="{{ "%.2f" | format(item.price) if item else '' }}" required placeholder="0.00">
+        </div>
+        <div class="field full">
+          <label for="quantity">Quantity</label>
+          <div class="range-wrap">
+            <input id="quantity" type="range" min="1" max="50" step="1" name="quantity"
+                   value="{{ item.quantity if item else 1 }}">
+            <span class="range-value" id="quantity-value">{{ item.quantity if item else 1 }}</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="color">Color</label>
+          <input id="color" type="text" name="color" maxlength="20"
+                 value="{{ item.color if item else '' }}" placeholder="e.g. black">
+        </div>
+        <div class="field">
+          <label for="size">Size</label>
+          <input id="size" type="text" name="size" maxlength="20"
+                 value="{{ item.size if item else '' }}" placeholder="e.g. M">
+        </div>
+        <div class="field">
+          <label for="revision">Revision</label>
+          <input id="revision" type="number" min="1" name="revision"
+                 value="{{ item.revision if item else 1 }}">
+        </div>
+        <div class="field">
+          <label for="weight">Weight (kg)</label>
+          <input id="weight" type="number" step="0.01" min="0" name="weight"
+                 value="{{ "%.2f" | format(item.weight) if item else '' }}" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label for="hp">HP</label>
+          <input id="hp" type="number" step="1" min="0" name="hp"
+                 value="{{ item.hp if item else 100 }}" placeholder="100">
+        </div>
+        <div class="field">
+          <label for="oil">Oil (kg)</label>
+          <input id="oil" type="number" step="0.01" min="0" name="oil"
+                 value="{{ "%.2f" | format(item.oil) if item else '' }}" placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="form-section"><span class="sec-no">02</span> Properties</div>
+      <div class="switch-grid">
+        <label class="switch">
+          <input id="is_anti_emc" type="checkbox" name="is_anti_emc" {% if item and item.is_anti_emc %}checked{% endif %}>
+          <span class="track"></span>
+          <span class="switch-label">Anti-EMC</span>
+        </label>
+        <label class="switch">
+          <input id="is_proof" type="checkbox" name="is_proof" {% if item and item.is_proof %}checked{% endif %}>
+          <span class="track"></span>
+          <span class="switch-label">Proof</span>
+        </label>
+        <label class="switch">
+          <input id="water_resistant" type="checkbox" name="water_resistant" {% if item and item.water_resistant %}checked{% endif %}>
+          <span class="track"></span>
+          <span class="switch-label">Water resistant</span>
+        </label>
+        <label class="switch">
+          <input id="self_desentry" type="checkbox" name="self_desentry" {% if item and item.self_desentry %}checked{% endif %}>
+          <span class="track"></span>
+          <span class="switch-label">Self-destroy</span>
+        </label>
+        <label class="switch">
+          <input id="is_offer" type="checkbox" name="is_offer" {% if item and item.is_offer %}checked{% endif %}>
+          <span class="track"></span>
+          <span class="switch-label">Is offer</span>
+        </label>
+        <label class="switch">
+          <input id="is_parasite" type="checkbox" name="is_parasite" {% if item and item.is_parasite %}checked{% endif %}>
+          <span class="track"></span>
+          <span class="switch-label">Is parasite</span>
+        </label>
+      </div>
+
+      <div class="form-section"><span class="sec-no">03</span> Parasited chance</div>
+      <div class="field">
+        <div class="range-wrap">
+          <input id="parasite_chance" type="range" min="0" max="90" step="1" name="parasite_chance"
+                 value="{{ item.parasite_chance if item else 0 }}">
+          <span class="range-value" id="pchance-value">{{ item.parasite_chance if item else 0 }}%</span>
+        </div>
+      </div>
+
+      <div class="form-section"><span class="sec-no">04</span> Abilities</div>
+      <div class="ability-field">
+        <div class="ability-toolbar">
+          <input type="text" id="ability-filter" placeholder="Filter abilities…" aria-label="Filter abilities" autocomplete="off">
+          <button type="button" class="btn btn-tonal" id="ability-rearm">Rearm</button>
+        </div>
+        <div class="ability-layout">
+          <div class="ability-grid" id="ability-grid">
+            {% for a in abilities %}
+            <label class="ability-opt">
+              <input type="checkbox" name="ability_ids" value="{{ a.id }}"
+                     data-name="{{ a.name }}" data-description="{{ a.description }}" data-description-ru="{{ a.description_ru }}"
+                     {% if item and a.id in item.abilities | map(attribute='id') %}checked{% endif %}>
+              <a class="ability-link" href="/ui/abilities?ability={{ a.id }}"
+                 title="{{ a.description }} · {{ a.description_ru }}"
+                 onclick="event.stopPropagation()" target="_blank" rel="noopener">{{ a.name }}</a>
+            </label>
+            {% endfor %}
+          </div>
+          <aside class="ability-panel">
+            <h3>Active abilities</h3>
+            <ul id="active-abilities-list" class="active-abilities-list"></ul>
+          </aside>
+        </div>
+      </div>
+
+      <div class="form-section"><span class="sec-no">05</span> Subitems</div>
+      <div class="sub-editor">
+        <div id="subitems-rows" class="sub-rows">
+          {% for s in (item.subitems if item else []) %}
+          <div class="sub-row" data-index="{{ loop.index0 }}">
+            <input type="hidden" name="sub_id" value="{{ s.id }}">
+            <div class="sub-name-wrap">
+              <input type="text" name="sub_name" value="{{ s.name }}" maxlength="50" class="sub-name"
+                     aria-label="Subitem name" placeholder="Name">
+              <button type="button" class="btn btn-tonal sub-pick" aria-label="Pick item">▾</button>
+            </div>
+            <input type="number" name="sub_qty" value="{{ s.quantity }}" min="1" step="1"
+                   aria-label="Quantity" placeholder="Qty">
+            <input type="number" name="sub_revision" value="{{ s.revision }}" min="1" step="1"
+                   aria-label="Revision" placeholder="Rev">
+            <input type="hidden" name="sub_is_parasite" value="{{ '1' if s.is_parasite else '0' }}">
+            <label class="check"><input type="checkbox" class="sub-para-toggle" {% if s.is_parasite %}checked{% endif %}> para</label>
+            <input type="number" name="sub_chance" value="{{ s.parasite_chance }}" min="0" max="90"
+                   aria-label="Parasite chance" placeholder="%">
+            <select class="sub-abilities" name="sub_ability_{{ loop.index0 }}" multiple
+                    aria-label="Subitem abilities" title="Subitem abilities">
+              {% for a in abilities %}
+              <option value="{{ a.id }}" {% if a.id in s.abilities | map(attribute='id') %}selected{% endif %} title="{{ a.description }} · {{ a.description_ru }}">{{ a.name }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn btn-error sub-remove" aria-label="Remove">×</button>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="btn" id="sub-add">+ Add subitem</button>
+        <button type="button" class="btn btn-tonal" id="sub-random">Random 3–8</button>
+      </div>
+
+      <div id="item-picker" class="picker-overlay" hidden>
+        <div class="picker-panel">
+          <div class="picker-head">
+            <strong>Pick item</strong>
+            <input type="text" id="picker-filter" placeholder="Filter…" autocomplete="off" aria-label="Filter items">
+            <button type="button" class="btn btn-tonal" id="picker-close">Close</button>
+          </div>
+          <div class="picker-grid" id="picker-grid"></div>
+          <div class="picker-foot">
+            <button type="button" class="btn btn-tonal" id="picker-prev">◀ Prev</button>
+            <span id="picker-page" class="muted"></span>
+            <button type="button" class="btn btn-tonal" id="picker-next">Next ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a class="btn btn-tonal btn-back" href="{{ url_for('ui_index') }}">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save item</button>
+      </div>
+    </form>
+  </div>
+  <script id="item-form-data" type="application/json">{{ {"picker_names": subitem_names, "abilities": abilities} | tojson }}</script>
+  <script src="/static/js/item_form.js?v={{ app_version }}"></script>
+{% endblock %}

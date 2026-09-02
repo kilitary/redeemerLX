@@ -1,0 +1,86 @@
+{% extends "base.html" %}{% block title %}Abilities{% endblock %}{% block
+content %}
+<link rel="stylesheet" href="/static/css/abilities.css?v={{ app_version }}" />
+<div class="page-header">
+    <h1>Abilities editor</h1>
+    <span class="muted">Dynamic ability → param mapping</span>
+</div>
+<div class="ab-layout">
+    <div class="ab-list card">
+        <h2>Abilities</h2>
+        <input id="ab-filter" type="text" placeholder="Filter..." />
+        <div id="ab-grid"></div>
+        <form id="ab-edit-form" class="ab-edit">
+            <h3 id="ab-edit-title">Select ability</h3>
+            <label>Name <input id="ab-name" /></label>
+            <label>Description <input id="ab-desc" /></label>
+            <label>Description RU <input id="ab-desc-ru" /></label>
+            <button type="submit" class="btn btn-primary">Save ability</button>
+        </form>
+    </div>
+    <div class="ab-params card">
+        <h2>
+            Ability → Parameters <span id="ab-current" class="muted"></span>
+        </h2>
+        <form id="ap-form" class="filters">
+            <select id="ap-param" required></select>
+            <input
+                id="ap-coeff"
+                type="number"
+                step="0.01"
+                placeholder="coeff /10ms"
+                required
+            />
+            <select id="ap-op">
+                <option value="add">add</option>
+                <option value="multiply">multiply</option>
+                <option value="set">set</option>
+            </select>
+            <select id="ap-curve">
+                <option value="linear">linear</option>
+                <option value="exponential">exp</option>
+                <option value="log">log</option>
+            </select>
+            <select id="ap-stack">
+                <option value="stack">stack</option>
+                <option value="replace">replace</option>
+                <option value="max">max</option>
+            </select>
+            <input
+                id="ap-priority"
+                type="number"
+                placeholder="priority"
+                value="0"
+            />
+            <input id="ap-min" type="number" step="0.01" placeholder="min" />
+            <input id="ap-max" type="number" step="0.01" placeholder="max" />
+            <input id="ap-base" type="number" step="0.01" placeholder="base" />
+            <label class="check"
+                ><input id="ap-enabled" type="checkbox" checked />
+                enabled</label
+            >
+            <input id="ap-desc" placeholder="description" />
+            <button type="submit" class="btn btn-primary">Add link</button>
+        </form>
+        <table>
+            <thead>
+                <tr>
+                    <th>Param</th>
+                    <th>coeff/10ms</th>
+                    <th>op</th>
+                    <th>curve</th>
+                    <th>stack</th>
+                    <th>prio</th>
+                    <th>enabled</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="ap-body"></tbody>
+        </table>
+    </div>
+</div>
+<script id="abilities-data" type="application/json">
+    {{ {"preselect": preselect_ability } | tojson }}
+</script>
+<script src="/static/js/abilities.js?v={{ app_version }}"></script>
+{% endblock %}

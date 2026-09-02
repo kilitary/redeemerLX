@@ -1,0 +1,102 @@
+{% extends "base.html" %} {% block title %}{{ subitem.name }}{% endblock %} {%
+block content %} {% block breadcrumbs %}
+<a class="crumb" href="{{ url_for('ui_index') }}">Items</a>
+<a class="crumb" href="{{ url_for('ui_item_detail', item_id=item.id) }}"
+    >{{ item.name }}</a
+>
+<span class="crumb crumb-here">{{ subitem.name }}</span>
+{% endblock %}
+<div class="page-header">
+    <div>
+        <h1>{{ subitem.name }}</h1>
+        <div class="muted">
+            {% if subitem.is_parasite %}<span class="chip">Parasite</span>{%
+            else %}Subitem{% endif %} · Qty {{ subitem.quantity }} · ID {{
+            subitem.id }} · Rev {{ subitem.revision }}
+        </div>
+        <div class="muted">
+            Parent:
+            <a href="{{ url_for('ui_item_detail', item_id=item.id) }}"
+                >{{ item.name }}</a
+            >
+            (ID {{ item.id }})
+        </div>
+        <div class="muted">
+            Price: ${{ "%.2f" | format(subitem.price) }} · Color: {{
+            subitem.color or "—" }} · Size: {{ subitem.size or "—" }} · Weight:
+            {% if subitem.weight %}{{ "%.2f" | format(subitem.weight) }} kg{%
+            else %}—{% endif %} · HP: {% if subitem.hp %}{{ subitem.hp }}{% else
+            %}—{% endif %} · Parasite chance: {{ subitem.parasite_chance or 0
+            }}%
+        </div>
+        <div class="muted">
+            Anti-EMC: {{ "yes" if subitem.is_anti_emc else "no" }} · Proof: {{
+            "yes" if subitem.is_proof else "no" }} · Water resistant: {{ "yes"
+            if subitem.water_resistant else "no" }} · Oil: {% if subitem.oil
+            %}{{ "%.2f" | format(subitem.oil) }} kg{% else %}—{% endif %} ·
+            Self-destroy: {{ "yes" if subitem.self_desentry else "no" }}
+        </div>
+    </div>
+    <div class="actions">
+        <a
+            class="btn btn-tonal"
+            href="{{ url_for('ui_item_detail', item_id=item.id) }}"
+            >Back</a
+        >
+    </div>
+</div>
+
+<div class="card">
+    <h2>Abilities</h2>
+    <form
+        method="post"
+        action="{{ url_for('ui_subitem_abilities', item_id=item.id, subitem_id=subitem.id) }}"
+    >
+        <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
+        <div class="ability-layout">
+            <div class="ability-grid" id="subitem-ability-grid">
+                {% for a in abilities %}
+                <label
+                    class="ability-cell"
+                    title="{{ a.name }} — {{ a.description }} · {{ a.description_ru }}"
+                >
+                    <input
+                        type="checkbox"
+                        name="ability_ids"
+                        value="{{ a.id }}"
+                        data-name="{{ a.name }}"
+                        data-description="{{ a.description }}"
+                        data-description-ru="{{ a.description_ru }}"
+                        {%
+                        if
+                        a.id
+                        in
+                        selected_ids
+                        %}checked{%
+                        endif
+                        %}
+                    />
+                    <span>{{ a.name }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <aside class="ability-panel">
+                <h3>Active abilities</h3>
+                <ul
+                    id="active-abilities-list"
+                    class="active-abilities-list"
+                ></ul>
+            </aside>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                Save abilities
+            </button>
+            <button type="button" class="btn btn-tonal" id="subitem-rearm">
+                Rearm
+            </button>
+        </div>
+    </form>
+</div>
+<script src="/static/js/subitem_detail.js?v={{ app_version }}"></script>
+{% endblock %}

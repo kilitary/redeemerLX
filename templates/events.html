@@ -1,0 +1,134 @@
+{% extends "base.html" %}{% block title %}Events — Trigger Program{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/css/events.css?v={{ app_version }}" />
+<div class="events-top">
+    <svg
+        class="events-top-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        aria-hidden="true"
+    >
+        <circle cx="12" cy="12" r="9" opacity="0.4" />
+        <circle cx="12" cy="12" r="5" />
+        <circle cx="12" cy="12" r="0.5" fill="currentColor" />
+        <line x1="12" y1="2" x2="12" y2="5" />
+        <line x1="12" y1="19" x2="12" y2="22" />
+        <line x1="2" y1="12" x2="5" y2="12" />
+        <line x1="19" y1="12" x2="22" y2="12" />
+    </svg>
+    <div>
+        <h1>Event Trigger Program</h1>
+        <span class="muted"
+            >Programmatic entity events &rarr; triggered abilities</span
+        >
+    </div>
+    <div class="events-readout">
+        <span class="events-readout-label">Events Online</span>
+        <span id="ev-count" class="events-readout-value">000</span>
+    </div>
+</div>
+
+<div class="ev-layout">
+    <div class="ev-list card">
+        <div class="ev-panel-title">
+            <span class="ev-caret">&rsaquo;</span>&nbsp;Event Roster
+        </div>
+        <input
+            id="ev-filter"
+            type="text"
+            class="ev-filter"
+            placeholder="FILTER // EVENT..."
+        />
+        <div id="ev-grid" class="ev-roster"></div>
+        <form id="ev-create" class="ev-create">
+            <input
+                id="ev-new-name"
+                type="text"
+                placeholder="new_event_name"
+                required
+            />
+            <button type="submit" class="btn btn-primary">+ New</button>
+        </form>
+    </div>
+
+    <div class="ev-editor card">
+        <form id="ev-edit-form" class="ev-edit">
+            <div class="ev-panel-title">
+                <span class="ev-caret">&rsaquo;</span>&nbsp;Trigger Parameters
+            </div>
+            <div id="ev-edit-title" class="ev-edit-tgt">ABILITY FROM EVENT</div>
+
+            <label class="ev-field"
+                ><span class="ev-label">01 // DESIGNATION</span>
+                <input id="ev-name" placeholder="event_name"
+            /></label>
+
+            <label class="ev-field"
+                ><span class="ev-label">02 // FIRING RATE /10MS</span>
+                <input
+                    id="ev-per"
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    value="0"
+            /></label>
+
+            <label class="ev-field"
+                ><span class="ev-label">03 // LOG ENTRY</span>
+                <textarea id="ev-desc" placeholder="briefing notes"></textarea>
+            </label>
+
+            <fieldset class="ev-fieldset">
+                <legend>
+                    04 // TARGET ABILITY
+                    <span id="ev-abil-count" class="ev-abil-count"
+                        >0 select</span
+                    >
+                </legend>
+                <div class="ev-abil-select-wrap">
+                    <div class="ev-abil-select-side">
+                        <label class="ev-abil-select-label"
+                            >SELECT ABILITY</label
+                        >
+                        <div
+                            class="ev-abil-grid"
+                            id="ev-abil-grid"
+                            role="listbox"
+                            aria-label="Target ability"
+                        ></div>
+                    </div>
+                    <div
+                        id="ev-abil-tooltip"
+                        class="ev-abil-tooltip"
+                        aria-live="polite"
+                        hidden
+                    >
+                        <div class="ev-abil-tooltip-title">
+                            ABILITY PARAMETERS
+                        </div>
+                        <div id="ev-abil-tooltip-body"></div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="ev-actions">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button
+                    type="button"
+                    class="btn btn-error"
+                    id="ev-delete"
+                    hidden
+                >
+                    Abort
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<script id="events-data" type="application/json">
+    {{ {"preselect": preselect_event, "abilities": abilities } | tojson }}
+</script>
+<script src="/static/js/events.js?v={{ app_version }}"></script>
+{% endblock %}

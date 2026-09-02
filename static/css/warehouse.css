@@ -1,0 +1,131 @@
+/* Warehouse page styles - extracted from warehouse.html */
+
+.mutate-count {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .75rem;
+}
+
+.mutate-count label {
+    font-size: .8rem;
+    color: var(--md-on-surface-variant);
+}
+
+.mutate-count input {
+    width: 4.5rem;
+    font: inherit;
+    padding: .4rem .55rem;
+    color: var(--md-on-surface);
+    background: var(--md-surface-container-high);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--md-shape-small);
+    outline: none;
+}
+
+.mutate-count input:focus {
+    border-color: var(--md-primary);
+}
+
+.mutate-grid {
+    display: flex;
+    align-items: flex-end;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.mutate-grid .field {
+    flex: 1 1 220px;
+}
+
+.mutate-grid select {
+    width: 100%;
+    font: inherit;
+    padding: .55rem .7rem;
+    color: var(--md-on-surface);
+    background: var(--md-surface-container-high);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--md-shape-small);
+    outline: none;
+}
+
+.mutate-grid select:hover {
+    border-color: var(--md-outline);
+}
+
+.mutate-grid select:focus {
+    border-color: var(--md-primary);
+}
+
+.mutate-grid select option {
+    background: var(--md-surface-container-high);
+    color: var(--md-on-surface);
+}
+
+.mutate-x {
+    font-size: 1.3rem;
+    color: var(--md-primary);
+    padding-bottom: .45rem;
+    line-height: 1;
+}
+
+.mutated-result {
+    margin-top: 1rem;
+    padding: .9rem 1rem;
+    background: var(--md-surface-container-high);
+    border: 1px solid var(--md-primary);
+    border-radius: var(--md-shape-small);
+}
+
+.mutated-result h3 {
+    margin: 0 0 .4rem;
+    font-size: .85rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--md-primary);
+}
+
+.mutated-result p {
+    margin: .2rem 0;
+}
+
+.mutated-result .btn {
+    margin-top: .6rem;
+}
+
+.mutated-result h4 {
+    margin: .8rem 0 .4rem;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--md-on-surface-variant);
+}
+
+.effects-log {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.effects-log li {
+    padding: .3rem 0;
+    border-bottom: 1px solid var(--md-outline-variant);
+    font-size: .78rem;
+}
+
+.effects-log li:last-child {
+    border-bottom: none;
+}
+
+.effects-log li strong {
+    color: var(--md-primary);
+    font-family: "Terminus", monospace;
+}
+
+.effects-log li .ability-ru {
+    color: var(--md-on-surface-variant);
+    font-size: .72rem;
+}

@@ -1,0 +1,180 @@
+{% extends "base.html" %} {% block title %}War Factory{% endblock %} {% block
+content %} {% block breadcrumbs %}<a
+    class="crumb"
+    href="{{ url_for('ui_index') }}"
+    >Items</a
+>{% endblock %}
+<link rel="stylesheet" href="/static/css/war_factory.css?v={{ app_version }}" />
+<div class="page-header">
+    <div>
+        <h1>
+            <span class="wf-title-icon">🏭</span> War Factory
+            <span class="muted" id="wf-gen">—</span>
+        </h1>
+        <div class="muted">
+            Automated loop: build → join → props → test → combat.
+        </div>
+        <div class="wf-stage">
+            <span class="chip chip-build">🛠 Build</span>
+            <span>→</span>
+            <span class="chip chip-join">🔀 Join</span>
+            <span>→</span>
+            <span class="chip chip-props">🎨 Props</span>
+            <span>→</span>
+            <span class="chip chip-test">🔬 Test</span>
+            <span>→</span>
+            <span class="chip chip-combat">⚔️ Combat</span>
+        </div>
+    </div>
+    <div class="actions">
+        <a class="btn btn-tonal" href="{{ url_for('ui_index') }}">← Back</a>
+        <a class="btn btn-tonal" href="{{ url_for('ui_test_facility') }}"
+            >🔬 Test facility</a
+        >
+        <a class="btn btn-tonal" href="{{ url_for('ui_combat_duel') }}"
+            >⚔️ Combat duel</a
+        >
+    </div>
+</div>
+
+<div class="card">
+    <h2>Loop controls</h2>
+    <form id="wf-form" class="filters" onsubmit="return false;">
+        <label
+            >Build count
+            <input type="number" id="wf-build" min="0" max="50" value="2" />
+        </label>
+        <label
+            >Join pairs
+            <input type="number" id="wf-join" min="0" max="20" value="1" />
+        </label>
+        <label
+            >Props fraction
+            <input
+                type="number"
+                id="wf-pf"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.3"
+            />
+        </label>
+        <label
+            >Props strength
+            <input
+                type="number"
+                id="wf-ps"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.4"
+            />
+        </label>
+        <label
+            >Test sample
+            <input type="number" id="wf-test" min="1" max="200" value="10" />
+        </label>
+        <label
+            >Seed
+            <input type="number" id="wf-seed" placeholder="random" value="" />
+        </label>
+        <label
+            >Ticks
+            <input type="number" id="wf-ticks" min="1" max="200" value="1" />
+        </label>
+        <button type="button" class="btn btn-primary" id="wf-tick">
+            ⚡ Run tick
+        </button>
+        <button type="button" class="btn btn-tonal" id="wf-run">▶ Run N</button>
+        <button type="button" class="btn btn-error" id="wf-stop">⏹ Stop</button>
+    </form>
+    <p class="muted">
+        Status: <span id="wf-status">idle</span> ·
+        <span id="wf-last-tick-summary"></span> · Last log rows:
+        <span id="wf-log-rows" class="num-neu">—</span>
+    </p>
+</div>
+
+<div class="card">
+    <h2>Automated loop</h2>
+    <p class="muted">
+        Start a background worker that runs the full loop (build → join → props
+        → test → combat) on an interval, forever. Building pauses once the
+        population cap is reached so the warehouse stays bounded.
+    </p>
+    <form id="wf-auto-form" class="filters" onsubmit="return false;">
+        <label
+            >Interval (s)
+            <input
+                type="number"
+                id="wf-auto-interval"
+                min="0.1"
+                max="3600"
+                step="0.5"
+                value="5"
+            />
+        </label>
+        <label
+            >Max population
+            <input
+                type="number"
+                id="wf-auto-maxpop"
+                min="1"
+                max="1000000"
+                value="400"
+            />
+        </label>
+        <label
+            >Max generations
+            <input
+                type="number"
+                id="wf-auto-maxgen"
+                min="1"
+                max="1000000"
+                placeholder="∞"
+                value=""
+            />
+        </label>
+        <button type="button" class="btn btn-primary" id="wf-auto-start">
+            ▶ Start auto
+        </button>
+        <button type="button" class="btn btn-error" id="wf-auto-stop">
+            ⏹ Stop auto
+        </button>
+    </form>
+    <p class="muted">
+        Auto: <span id="wf-auto-state">stopped</span>
+        <span id="wf-auto-detail"></span>
+    </p>
+</div>
+
+<div class="card">
+    <h2>📋 Last tick</h2>
+    <pre id="wf-last" class="muted">Run the loop to see results.</pre>
+</div>
+
+<div class="card">
+    <h2>🏆 Leaderboard</h2>
+    <table id="wf-leaderboard">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Wins</th>
+                <th>Fitness</th>
+                <th>ATK</th>
+                <th>DEF</th>
+                <th>SPD</th>
+                <th>HP</th>
+            </tr>
+        </thead>
+        <tbody id="wf-leaderboard-body">
+            <tr>
+                <td colspan="8" class="empty">No winners yet.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script src="/static/js/war_factory.js?v={{ app_version }}"></script>
+{% endblock %}

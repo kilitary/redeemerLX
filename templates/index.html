@@ -1,0 +1,296 @@
+{% extends "base.html" %} {% block title %}Items{% endblock %} {% block content
+%}
+<div class="page-header">
+    <h1>Units<span id="live-dot" title="Live updates enabled"></span></h1>
+    <a class="btn btn-primary" href="{{ url_for('ui_item_new') }}"
+        >+ New unit</a
+    >
+</div>
+<form class="filters" id="filters" method="get" data-ajax="true">
+    <input
+        type="text"
+        id="f-q"
+        placeholder="Search"
+        value="{{ q }}"
+        autocomplete="off"
+        aria-label="Search by name"
+    />
+    <select id="f-color" aria-label="Color" data-label="All colors">
+        <option value="">All colors</option>
+    </select>
+    <select id="f-size" aria-label="Size" data-label="All sizes">
+        <option value="">All sizes</option>
+    </select>
+    <select id="f-offer" aria-label="Offer">
+        <option value="">Any offer</option>
+        <option value="true">Offers</option>
+        <option value="false">Regular</option>
+    </select>
+    <select id="f-water" aria-label="Water resistant">
+        <option value="">Any water resistance</option>
+        <option value="true">Water resistant</option>
+        <option value="false">Standard</option>
+    </select>
+    <select id="f-sd" aria-label="Self-destroy">
+        <option value="">Any self-destroy</option>
+        <option value="true">Self-destroy</option>
+        <option value="false">Standard</option>
+    </select>
+    <select id="f-parasite" aria-label="Parasite">
+        <option value="">Any parasite</option>
+        <option value="true">Parasites</option>
+        <option value="false">Regular</option>
+    </select>
+    <select id="f-revision" aria-label="Revision" data-label="All revisions">
+        <option value="">All revisions</option>
+    </select>
+    <div class="ability-filter" id="ability-filter">
+        <button
+            type="button"
+            class="ability-trigger"
+            id="ability-trigger"
+            aria-haspopup="true"
+            aria-expanded="false"
+        >
+            Abilities <span class="ability-count" id="ability-count"></span>
+        </button>
+        <div class="ability-popup" id="ability-popup" hidden>
+            <div class="ability-grid" id="ability-grid"></div>
+        </div>
+    </div>
+    <select id="f-sort" aria-label="Sort by">
+        <option value="id">Sort: ID</option>
+        <option value="name">Sort: Name</option>
+        <option value="price">Sort: Price</option>
+        <option value="quantity">Sort: Qty</option>
+        <option value="is_offer">Sort: Offer</option>
+        <option value="color">Sort: Color</option>
+        <option value="size">Sort: Size</option>
+        <option value="weight">Sort: Weight</option>
+        <option value="hp">Sort: HP</option>
+        <option value="is_anti_emc">Sort: Anti-EMC</option>
+        <option value="is_proof">Sort: Proof</option>
+        <option value="water_resistant">Sort: Water</option>
+        <option value="oil">Sort: Oil</option>
+        <option value="self_desentry">Sort: Self-destroy</option>
+        <option value="is_parasite">Sort: Parasite</option>
+        <option value="parasite_chance">Sort: Parasite chance</option>
+        <option value="revision">Sort: Revision</option>
+        <option value="added_at">Sort: Added</option>
+        <option value="updated_at">Sort: Updated</option>
+    </select>
+    <select id="f-order" aria-label="Sort order">
+        <option value="asc">Ascending</option>
+        <option value="desc">Descending</option>
+    </select>
+    <div class="range-slider" id="price-slider">
+        <label>Price: <span id="price-label">Any</span></label>
+        <div class="range-track">
+            <input
+                type="range"
+                id="price-min"
+                min="0"
+                max="1000"
+                value="0"
+                step="10"
+            />
+            <input
+                type="range"
+                id="price-max"
+                min="0"
+                max="1000"
+                value="1000"
+                step="10"
+            />
+        </div>
+    </div>
+    <div class="range-slider" id="weight-slider">
+        <label>Weight: <span id="weight-label">Any</span></label>
+        <div class="range-track">
+            <input
+                type="range"
+                id="weight-min"
+                min="0"
+                max="100"
+                value="0"
+                step="1"
+            />
+            <input
+                type="range"
+                id="weight-max"
+                min="0"
+                max="100"
+                value="100"
+                step="1"
+            />
+        </div>
+    </div>
+    <div class="range-slider" id="hp-slider">
+        <label>HP: <span id="hp-label">Any</span></label>
+        <div class="range-track">
+            <input
+                type="range"
+                id="hp-min"
+                min="0"
+                max="1000"
+                value="0"
+                step="10"
+            />
+            <input
+                type="range"
+                id="hp-max"
+                min="0"
+                max="1000"
+                value="1000"
+                step="10"
+            />
+        </div>
+    </div>
+    <div class="range-slider" id="oil-slider">
+        <label>Oil: <span id="oil-label">Any</span></label>
+        <div class="range-track">
+            <input
+                type="range"
+                id="oil-min"
+                min="0"
+                max="100"
+                value="0"
+                step="1"
+            />
+            <input
+                type="range"
+                id="oil-max"
+                min="0"
+                max="100"
+                value="100"
+                step="1"
+            />
+        </div>
+    </div>
+    <div class="range-slider" id="qty-slider">
+        <label>Quantity: <span id="qty-label">Any</span></label>
+        <div class="range-track">
+            <input
+                type="range"
+                id="qty-min"
+                min="0"
+                max="50"
+                value="0"
+                step="1"
+            />
+            <input
+                type="range"
+                id="qty-max"
+                min="0"
+                max="50"
+                value="50"
+                step="1"
+            />
+        </div>
+    </div>
+    <div class="range-slider" id="pchance-slider">
+        <label>Parasite chance: <span id="pchance-label">Any</span></label>
+        <div class="range-track">
+            <input
+                type="range"
+                id="pchance-min"
+                min="0"
+                max="90"
+                value="0"
+                step="1"
+            />
+            <input
+                type="range"
+                id="pchance-max"
+                min="0"
+                max="90"
+                value="90"
+                step="1"
+            />
+        </div>
+    </div>
+    <button type="submit" class="btn btn-tonal">Filter</button>
+</form>
+<div
+    class="muted"
+    id="live-status"
+    style="margin-bottom: 0.6rem; font-size: 0.8rem"
+>
+    Loading…
+</div>
+
+<div class="cards-grid">
+    {% if items %} {% for item in items %}
+    <div class="card compact">
+        <div class="card-header">{{ item.name }}</div>
+        <div class="card-props">
+            <span class="prop"
+                ><strong>Price:</strong> ${{ "%.2f"|format(item.price) }}</span
+            >
+            <span class="prop"
+                ><strong>Offer:</strong> {{ item.is_offer and "Offer" or "—"
+                }}</span
+            >
+            <span class="prop"
+                ><strong>Color:</strong> {{ item.color or "—" }}</span
+            >
+            <span class="prop"
+                ><strong>Size:</strong> {{ item.size or "—" }}</span
+            >
+            <span class="prop"
+                ><strong>Qty:</strong> {{ item.quantity or "—" }}</span
+            >
+            <span class="prop"
+                ><strong>Weight:</strong> {{ item.weight and
+                ("%.2f"|format(item.weight)) ~ "kg" or "—" }}</span
+            >
+            <span class="prop"><strong>HP:</strong> {{ item.hp or "—" }}</span>
+            <span class="prop"
+                ><strong>Proof:</strong> {{ item.is_proof and "yes" or "—"
+                }}</span
+            >
+            <span class="prop"
+                ><strong>Water:</strong> {{ item.water_resistant and "yes" or
+                "—" }}</span
+            >
+            <span class="prop"
+                ><strong>Oil/Day:</strong> {{ item.oil and
+                ("%.2f"|format(item.oil)) ~ "kg" or "—" }}</span
+            >
+            <span class="prop"
+                ><strong>P.chance:</strong> {{ item.parasite_chance or 0
+                }}%</span
+            >
+            <span class="prop muted"
+                ><strong>Added:</strong> {{ item.added_at.strftime('%Y-%m-%d
+                %H:%M') if item.added_at else "—" }}</span
+            >
+            <span class="prop muted"
+                ><strong>Updated:</strong> {{ item.updated_at.strftime('%Y-%m-%d
+                %H:%M') if item.updated_at else "—" }}</span
+            >
+        </div>
+        <div class="card-actions">
+            <a
+                class="btn btn-tonal"
+                href="{{ url_for('ui_item_edit', item_id=item.id) }}"
+                >Edit</a
+            >
+            <button
+                type="button"
+                class="btn btn-error"
+                data-delete="{{ item.id }}"
+            >
+                Delete
+            </button>
+        </div>
+    </div>
+    {% endfor %} {% else %}
+    <div class="empty">No items match.</div>
+    {% endif %}
+</div>
+
+<link rel="stylesheet" href="/static/css/index.css?v={{ app_version }}" />
+
+<script src="/static/js/index.js?v={{ app_version }}"></script>
+{% endblock %}
