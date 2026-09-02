@@ -182,13 +182,14 @@ function initWarFactory() {
     function renderLastTickDetail(j, jsonMode) {
         const el = $("wf-last");
         if (!j) { el.innerHTML = ""; return; }
+        el.innerHTML = "";
+        el.classList.remove("wf-pre");
         if (jsonMode) {
             el.innerHTML = esc(JSON.stringify(j, null, 2));
             el.classList.add("wf-pre");
             return;
         }
 
-        el.classList.remove("wf-pre");
         const container = document.createElement("div");
         container.className = "wf-log";
         const header = document.createElement("div");

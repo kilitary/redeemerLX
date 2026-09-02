@@ -13,6 +13,9 @@ import sys
 sys.path.insert(0, ".")
 from parts import ALL_PARTS, BRANDS, COLORS, MODELS, NAMES, PART_KINDS, SIZES, SUB_NAMES
 
+# Auto-assigned single-word category per ability (e.g. measure/meter/serialize -> scan).
+from ability import ability_category
+
 
 def random_delta(max_minutes: int) -> timedelta:
     return timedelta(minutes=random.randint(0, max_minutes))
@@ -34,14 +37,15 @@ def main(count: int = 100) -> None:
     conn.execute("PRAGMA foreign_keys = ON")
     cur = conn.cursor()
 
-    # Load bounds, abilities, events
+    cur.execute("SELECT id, name, category FROM abilities")
+    ability_info = [(row[0], row[1], row[2]) for row in cur.fetchall()]
+    ability_ids = [a[0] for a in ability_info]
+
+    # Load bounds, events
     cur.execute(
         "SELECT id, min_value, max_value FROM parameters WHERE min_value IS NOT NULL AND max_value IS NOT NULL"
     )
     bounds = {row[0]: (row[1], row[2]) for row in cur.fetchall()}
-
-    cur.execute("SELECT id FROM abilities")
-    ability_ids = [row[0] for row in cur.fetchall()]
 
     cur.execute("SELECT id FROM events")
     event_ids = [row[0] for row in cur.fetchall()]
@@ -57,6 +61,23 @@ def main(count: int = 100) -> None:
     cur.execute("DELETE FROM items")
     conn.commit()
     print("Truncated items and related tables")
+
+    # Assign a single-word category to each ability (auto) and mirror it into
+    # the ability_category link table.
+    now_ts = now_iso
+    cur.execute("DELETE FROM ability_category")
+    for aid, name, old_cat in ability_info:
+        cat = ability_category(name) if not old_cat else old_cat
+        cur.execute(
+            "UPDATE abilities SET category = ? WHERE id = ?", (cat, aid)
+        )
+        cur.execute(
+            "INSERT INTO ability_category (ability_id, category, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?)",
+            (aid, cat, now_ts, now_ts),
+        )
+    conn.commit()
+    print(f"Assigned categories to {len(ability_info)} abilities (ability_category rebuilt)")
 
     # Insert root items
     root_items = []
@@ -253,6 +274,8 @@ def main(count: int = 100) -> None:
     print(f"Event-ability links: {cur.fetchone()[0]}")
     cur.execute("SELECT COUNT(*) FROM ability_to_params")
     print(f"Ability-param links: {cur.fetchone()[0]}")
+    cur.execute("SELECT COUNT(*) FROM ability_category")
+    print(f"Ability-category links: {cur.fetchone()[0]}")
     conn.close()
 
     print(f"Added {count} random items with parameters, abilities, and events.")

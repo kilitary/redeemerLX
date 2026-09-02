@@ -37,6 +37,8 @@ from main import (
     AbilityDB,
     AbilityParamDB,
     ItemDB,
+    ItemParameterDB,
+    ParameterDB,
     SessionLocal,
     apply_ability_effects,
     mutate_name,
@@ -130,6 +132,40 @@ def _build_part_name() -> str:
     return f"{brand} {kind} {model} {suffix}"
 
 
+def ensure_combat_readiness(db: Session, item: ItemDB) -> dict[str, Any]:
+    """Guarantee a (possibly fresh/mutated) unit can fight.
+
+    Ensures the unit is linked to *every* parameter (all parameters present)
+    and owns at least one ability. Returns a report of what was added.
+    """
+    report: dict[str, Any] = {}
+    param_ids = {
+        p.id for p in item.item_parameters
+    }
+    all_params = db.scalars(select(ParameterDB)).all()
+    added_params = 0
+    for p in all_params:
+        if p.id in param_ids:
+            continue
+        db.add(
+            ItemParameterDB(
+                item_id=item.id,
+                par_id=p.id,
+                value=None,
+                value_text=None,
+                source="derived",
+            )
+        )
+        added_params += 1
+    if not item.abilities:
+        pool = db.scalars(select(AbilityDB)).all()
+        if pool:
+            item.abilities = [random.choice(pool)]
+    report["params_added"] = added_params
+    report["abilities_added"] = 1 if item.abilities else 0
+    return report
+
+
 def build_units(db: Session, count: int) -> list[ItemDB]:
     """Create ``count`` random top-level units with 0-4 sub-parts each.
 
@@ -167,10 +203,10 @@ def build_units(db: Session, count: int) -> list[ItemDB]:
             ],
         )
         if abilities:
-            item.abilities = random.sample(
-                abilities, random.randint(0, min(1, len(abilities)))
-            )
+            item.abilities = random.sample(abilities, 1)
         db.add(item)
+        db.flush()
+        ensure_combat_readiness(db, item)
         created.append(item)
     db.commit()
     logger.info(
@@ -231,6 +267,8 @@ def join_units(db: Session, parents: list[ItemDB]) -> ItemDB:
     baby.quantity = max(1, int(baby.quantity))
     baby.parasite_chance = _clamp_pct(baby.parasite_chance)
     db.add(baby)
+    db.flush()
+    ensure_combat_readiness(db, baby)
     db.commit()
     db.refresh(baby)
     return baby
@@ -936,9 +974,16 @@ def _ability_strike(
     return max(lo, min(hi, new))
 
 
-def _roster_lines(combatants: list[Combatant]) -> list[str]:
+def _roster_lines(combatants: list[Combatant], opponents: list[Combatant]) -> list[str]:
     """Opening description of each unit's parameters and abilities (with the
-    parameters each ability targets), prepended to the battle log."""
+    parameters each ability targets), prepended to the battle log. After each
+    ability it prints whether the opposing side has a counterpart ability that
+    targets an overlapping parameter."""
+    opp_pids: set[int] = set()
+    for opp in opponents:
+        for ab in opp.abilities_data:
+            opp_pids.update(l["param_id"] for l in ab["params"])
+    opp_names = ", ".join(o.name for o in opponents)
     lines: list[str] = []
     for c in combatants:
         lines.append(f"  unit {c.name}")
@@ -957,8 +1002,12 @@ def _roster_lines(combatants: list[Combatant]) -> list[str]:
                 targets = ", ".join(
                     l.get("param_name") or f"p{l['param_id']}" for l in ab["params"]
                 )
+                if any(l["param_id"] in opp_pids for l in ab["params"]):
+                    counterpart = f"counterpart on {opp_names}: yes"
+                else:
+                    counterpart = f"counterpart on {opp_names}: none"
                 lines.append(
-                    f"    ability {ab['name']} -> parameters [{targets}]"
+                    f"    ability {ab['name']} -> parameters [{targets}] ({counterpart})"
                 )
         else:
             lines.append("    abilities: none")
@@ -978,8 +1027,8 @@ def _run_battle(
         f"{team_b[0].name if team_b else 'B'})"
     )
     log.append("  ROSTER:")
-    log.extend(_roster_lines(team_a))
-    log.extend(_roster_lines(team_b))
+    log.extend(_roster_lines(team_a, team_b))
+    log.extend(_roster_lines(team_b, team_a))
     rounds = 0
     while any(c.alive for c in team_a) and any(c.alive for c in team_b):
         rounds += 1
@@ -1041,6 +1090,10 @@ def _run_battle(
                 cur = partner.params[pid]
                 newv = target
                 partner.params[pid] = max(lo, min(hi, newv))
+                # A strike with no actual change (delta 0) would stall melee
+                # forever, so force the parameter to its minimum instead.
+                if partner.params[pid] == cur:
+                    partner.params[pid] = lo
 
                 # Check if parameter exceeded physical bounds
                 exceeded = newv < lo or newv > hi
@@ -1192,7 +1245,14 @@ def _run_battle(
                 atk = random.choice(attackers)
                 tgt = random.choice(alive_defs)
                 ecm_online = atk.is_anti_emc
-                if atk.is_parasite and atk.parasite_chance > 0 and ecm_online:
+                # ECM/parasite is only used by units WITHOUT abilities; a unit
+                # that has abilities fights with those instead of ECM.
+                if (
+                    not atk.abilities_data
+                    and atk.is_parasite
+                    and atk.parasite_chance > 0
+                    and ecm_online
+                ):
                     if _parasite_roll(atk):
                         dmg = 10.0 + (atk.parasite_chance * 0.2)
                         tgt.hp = round(max(0.0, tgt.hp - dmg), 3)

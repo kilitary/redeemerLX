@@ -33,7 +33,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.pool import StaticPool
 
-from ability import ABILITIES
+from ability import ABILITIES, ability_category
 from parts import ALL_PARTS, CATALOG_NAMES, STATIC_ITEMS
 
 BASE_DIR = FilePath(__file__).resolve().parent
@@ -149,7 +149,7 @@ class Version:
         return self.__str__()
 
 
-APP_VERSION = str(Version("1.36.9"))
+APP_VERSION = str(Version("1.36.16"))
 logger.info(f"App version: {APP_VERSION}")
 templates.env.globals["app_version"] = APP_VERSION
 
@@ -225,6 +225,7 @@ class AbilityDB(Base):
     name: Mapped[str] = mapped_column(unique=True, index=True)
     description: Mapped[str] = mapped_column(default="")
     description_ru: Mapped[str] = mapped_column(default="")
+    category: Mapped[str] = mapped_column(default="", index=True)
 
     items: Mapped[list["ItemDB"]] = relationship(
         secondary=item_abilities, back_populates="abilities"
@@ -236,6 +237,11 @@ class AbilityDB(Base):
     )
     events: Mapped[list["EventDB"]] = relationship(
         secondary=event_abilities, back_populates="abilities"
+    )
+    categories: Mapped[list["AbilityCategoryDB"]] = relationship(
+        back_populates="ability",
+        cascade="all, delete-orphan",
+        order_by="AbilityCategoryDB.id",
     )
 
 
@@ -374,6 +380,23 @@ class AbilityParamDB(Base):
     parameter: Mapped["ParameterDB"] = relationship()
 
 
+class AbilityCategoryDB(Base):
+    """A single-word category linked to an ability (e.g. ability 'measure' →
+    category 'scan'). Each ability can have one or more category links."""
+
+    __tablename__ = "ability_category"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    ability_id: Mapped[int] = mapped_column(
+        ForeignKey("abilities.id", ondelete="CASCADE"), index=True
+    )
+    category: Mapped[str] = mapped_column(default="", index=True)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
+
+    ability: Mapped["AbilityDB"] = relationship(back_populates="categories")
+
+
 Base.metadata.create_all(bind=engine)
 
 
@@ -429,6 +452,10 @@ def migrate_schema() -> None:
             conn.exec_driver_sql(
                 "ALTER TABLE abilities ADD COLUMN description_ru VARCHAR NOT NULL DEFAULT ''"
             )
+        if "category" not in ability_cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE abilities ADD COLUMN category VARCHAR NOT NULL DEFAULT ''"
+            )
 
         tables = {
             row[0]
@@ -449,6 +476,10 @@ def migrate_schema() -> None:
         if "description_ru" not in ability_cols:
             conn.exec_driver_sql(
                 "ALTER TABLE abilities ADD COLUMN description_ru VARCHAR NOT NULL DEFAULT ''"
+            )
+        if "category" not in ability_cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE abilities ADD COLUMN category VARCHAR NOT NULL DEFAULT ''"
             )
 
         tables = {
@@ -1347,6 +1378,7 @@ def seed_abilities(db: Session) -> int:
                     name=spec.name,
                     description=spec.description,
                     description_ru=spec.description_ru,
+                    category=spec.category or ability_category(spec.name),
                 )
             )
             created += 1
@@ -1355,8 +1387,37 @@ def seed_abilities(db: Session) -> int:
                 existing.description_ru = spec.description_ru
             if existing.description != spec.description:
                 existing.description = spec.description
+            target_cat = spec.category or ability_category(spec.name)
+            if existing.category != target_cat:
+                existing.category = target_cat
     db.commit()
+    sync_ability_categories(db)
     return created, new
+
+
+def sync_ability_categories(db: Session) -> int:
+    """Ensure the ability_category table mirrors each ability's category.
+
+    For every ability that already has a category, drop existing category rows
+    and insert a fresh one, so the link table never goes stale.
+    """
+    abilities = db.scalars(select(AbilityDB)).all()
+    synced = 0
+    for ab in abilities:
+        if not ab.category:
+            continue
+        for link in list(ab.categories):
+            db.delete(link)
+        db.flush()
+        db.add(
+            AbilityCategoryDB(
+                ability_id=ab.id,
+                category=ab.category,
+            )
+        )
+        synced += 1
+    db.commit()
+    return synced
 
 
 @asynccontextmanager

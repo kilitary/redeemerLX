@@ -88,21 +88,21 @@
     }
     .range-track input[type="range"]::-webkit-slider-thumb {
       pointer-events: auto; -webkit-appearance: none;
-      width: 14px; height: 14px; border-radius: 50%;
+      width: 14px; height: 14px; border-radius: 0;
       background: var(--md-primary); cursor: pointer;
       border: 2px solid var(--md-surface);
       box-shadow: 0 0 0 1px var(--md-outline);
     }
     .range-track input[type="range"]::-moz-range-thumb {
       pointer-events: auto; width: 14px; height: 14px;
-      border-radius: 50%; background: var(--md-primary);
+      border-radius: 0; background: var(--md-primary);
       cursor: pointer; border: 2px solid var(--md-surface);
       box-shadow: 0 0 0 1px var(--md-outline);
     }
     .range-track::before {
       content: ""; position: absolute; left: 0; right: 0; top: 50%;
       transform: translateY(-50%); height: 4px;
-      background: var(--md-outline-variant); border-radius: 2px;
+      background: var(--md-outline-variant); border-radius: 0;
     }
     .ability-filter {
       position: relative;
@@ -116,7 +116,7 @@
     .ability-trigger:hover { border-color: var(--md-primary); }
     .ability-count {
       min-width: 1.1rem; height: 1.1rem; line-height: 1.1rem;
-      border-radius: 999px; background: var(--md-surface-container-high);
+      border-radius: 0; background: var(--md-surface-container-high);
       color: var(--md-on-surface-variant); font-size: .72rem;
       text-align: center; padding: 0 .3rem;
     }
@@ -126,7 +126,7 @@
       z-index: 50; min-width: 360px;
       background: var(--md-surface-container);
       border: 1px solid var(--md-outline-variant);
-      border-radius: 8px; box-shadow: var(--md-elevation-4);
+      border-radius: 0; box-shadow: var(--md-elevation-4);
       padding: .5rem;
     }
     .ability-grid {
@@ -143,7 +143,7 @@
       cursor: pointer; user-select: none;
       background: var(--md-surface-container-low);
       border: 1px solid var(--md-outline-variant);
-      border-radius: 4px; padding: .15rem .35rem;
+      border-radius: 0; padding: .15rem .35rem;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       transition: border-color .12s ease, background .12s ease;
     }

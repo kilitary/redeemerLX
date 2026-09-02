@@ -17,6 +17,7 @@ class Ability:
     name: str
     description: str = ""
     description_ru: str = ""
+    category: str = ""
 
 
 # --------------------------------------------------------------------------- #
@@ -629,3 +630,74 @@ ABILITIES: list[Ability] = [
         "unpalletize", "remove the object from its pallet", "снять объект с паллеты"
     ),
 ]
+
+
+# --------------------------------------------------------------------------- #
+# Category auto-assignment: map every ability verb to a single-word category.
+# --------------------------------------------------------------------------- #
+
+# Ordered keyword -> category rules. An ability is matched by scanning its name
+# (case-insensitive) for these substrings; the first hit wins. The ordering
+# matters, so more specific keywords (e.g. "compress-data") come before their
+# bare stem ("compress").
+_CATEGORY_RULES: list[tuple[tuple[str, ...], str]] = [
+    ("scan", ("measure", "meter", "serialize", "weigh", "inspect", "test", "retest",
+              "monitor", "scan", "count", "probe", "gauge", "sensor", "readout")),
+    ("shape", ("bend", "fold", "unfold", "stretch", "compress", "expand", "flatten",
+               "extrude", "mold", "forge", "cast", "skew", "distort", "straighten",
+               "magnify", "minify")),
+    ("pulse", ("pressurize", "depressurize", "vent", "purge", "fill", "refill",
+               "drain", "empty", "pump")),
+    ("move", ("rotate", "rotate-back", "translate", "align", "misalign", "mirror",
+              "move", "shift", "shift")),
+    ("cut", ("cut", "trim", "carve", "drill", "bore", "ream", "tap", "thread",
+             "punch", "stamp", "engrave", "etch", "dice", "slice")),
+    ("finish", ("polish", "buff", "sand", "grind", "sharpen", "blunt")),
+    ("join", ("weld", "braze", "solder", "rivet", "bolt", "screw", "glue", "clip",
+              "pin", "clamp", "connect", "merge", "amalgamate", "fasten", "mount",
+              "install", "insert", "attach")),
+    ("separate", ("split", "deconnect", "isolate", "segregate", "disintegrate",
+                  "unlink", "detach", "unmount", "uninstall", "extract", "remove")),
+    ("thermal", ("heat", "cool", "freeze", "thaw", "melt", "anneal", "temper",
+                 "quench", "harden", "soften", "firm-up", "harden-shell")),
+    ("protect", ("shield", "unshield", "insulate", "seal", "unseal", "arm", "dearm",
+                 "disarm", "prime", "desshield", "kinsulate", "aminsulate",
+                 "expose", "insland", "outland")),
+    ("power", ("charge", "discharge", "recharge", "power-on", "power-off",
+               "activate", "deactivate", "enable", "disable", "hrebate")),
+    ("data", ("encode", "decode", "encrypt", "decrypt", "compress-data",
+              "decompress", "format", "reformat", "initialize", "configure",
+              "deconfigure", "upgrade", "downgrade", "update", "patch",
+              "firm-up", "reset")),
+    ("maintain", ("repair", "service", "maintain", "lubricate", "oil", "grease",
+                  "clean", "wash", "decontaminate", "sterilize", "calibrate",
+                  "recalibrate", "tune", "detune")),
+    ("manage", ("wrap", "unwrap", "package", "unpackage", "crate", "uncrate",
+                "palletize", "unpalletize", "stack", "unstack", "nest", "unnest",
+                "load", "unload", "deliver", "receive", "transfer", "assign",
+                "dispatch", "retrieve")),
+    ("state", ("reset", "select", "deselect", "sort", "index", "categorize",
+               "label", "relabel", "tag", "untag", "mark", "unmark", "brand",
+               "dimark", "register", "deregister")),
+    ("optics", ("focus", "defocus", "polarize", "depolarize", "magnetize",
+                "demagnetize")),
+]
+
+# Fallback single-word category for verbs not otherwise matched.
+_DEFAULT_CATEGORY = "operate"
+
+
+def ability_category(name: str) -> str:
+    """Return the single-word category assigned to a given ability name."""
+    lowered = name.lower()
+    for category, keywords in _CATEGORY_RULES:
+        for kw in keywords:
+            if kw in lowered:
+                return category
+    return _DEFAULT_CATEGORY
+
+
+# Fill in the category on every static ability (keeps this module the single
+# source of truth: the DB column and the ability_category table both mirror it).
+for _spec in ABILITIES:
+    object.__setattr__(_spec, "category", ability_category(_spec.name))
