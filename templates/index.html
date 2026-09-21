@@ -1,4 +1,7 @@
-{% extends "base.html" %} {% block title %}Items{% endblock %} {% block content
+{% extends "base.html" %} {% block title %}Items{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="/static/css/index.css?v={{ app_version }}" />
+{% endblock %} {% block content
 %}
 <div class="page-header">
     <h1>Units<span id="live-dot" title="Live updates enabled"></span></h1>
@@ -290,7 +293,8 @@
     {% endif %}
 </div>
 
-<link rel="stylesheet" href="/static/css/index.css?v={{ app_version }}" />
+{% endblock %}
 
-<script src="/static/js/index.js?v={{ app_version }}"></script>
+{% block scripts %}
+<script src="/static/js/index.js?v={{ app_version }}" defer></script>
 {% endblock %}

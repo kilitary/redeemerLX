@@ -1,6 +1,8 @@
 {% extends "base.html" %}{% block title %}Events — Trigger Program{% endblock %}
-{% block content %}
+{% block styles %}
 <link rel="stylesheet" href="/static/css/events.css?v={{ app_version }}" />
+{% endblock %}
+{% block content %}
 <div class="events-top">
     <svg
         class="events-top-icon"
@@ -130,5 +132,7 @@
 <script id="events-data" type="application/json">
     {{ {"preselect": preselect_event, "abilities": abilities } | tojson }}
 </script>
-<script src="/static/js/events.js?v={{ app_version }}"></script>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/events.js?v={{ app_version }}" defer></script>
 {% endblock %}

@@ -37,6 +37,10 @@ let WORDS = [
   "drice"
 ];
 
+// Shared gate: set to false once all hero digits have been destroyed, which
+// stops further spawns of units, digits and pics.
+window.__digitsAlive = true;
+
 (function () {
   const canvas = document.getElementById("nato");
   const ctx = canvas.getContext("2d");
@@ -218,6 +222,7 @@ let WORDS = [
       born: performance.now(),
       life: life,
       color: color,
+      name: WORDS[Math.floor(Math.random() * WORDS.length)],
       // Crawl movement: a target is picked, the unit crawls 3px toward it
       // every 250ms, then picks another target once it arrives.
       tx: x,
@@ -281,10 +286,24 @@ let WORDS = [
       ctx.shadowColor = a.color;
       drawSymbol[a.fnIdx](ctx, 0, 0, a.size);
       ctx.restore();
+
+      // Small-caps code name under the unit (kept unrotated, scales with unit).
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.fillStyle = a.color;
+      ctx.shadowColor = a.color;
+      ctx.font =
+        "small-caps " +
+        Math.max(8, Math.round(a.size * 0.9)) +
+        'px "Terminus", monospace';
+      ctx.textAlign = "center";
+      ctx.fillText(a.name, a.x, a.y + a.size + 14);
+      ctx.restore();
     }
   }
 
   function schedule() {
+    if (window.__digitsAlive === false) return; // digits gone - stop spawning units
     spawn();
     setTimeout(schedule, 400 + Math.random() * 1200);
   }
@@ -325,6 +344,10 @@ let WORDS = [
   const heroSums = document.createElement("div");
   heroSums.className = "hero-sums";
   heroSums.append(leftSum, rightSum);
+  // Random X position (80–150px) for the top digit counters.
+  // Only set left; CSS right:0 keeps the element visible by extending to the
+  // right edge, while justify-content:center keeps the pair centered within.
+  heroSums.style.left = (80 + Math.random() * 70) + "px";
 
   function hexValue(ch) {
     const v = parseInt(ch, 16);
@@ -364,6 +387,7 @@ let WORDS = [
       return;
     }
     if (other === 0 && red === 0 && !navigated) {
+      window.__digitsAlive = false;
       navigated = true;
       runMasher();
     }
@@ -441,14 +465,16 @@ let WORDS = [
   function restartDigits() {
     heroSums.classList.remove("cracked");
     rightSum.style.opacity = "1";
+    if (window.__digitsAlive === false) return; // digits gone - do not respawn
     navigated = false;
     converting = false;
     fill();
   }
 
   function fill() {
-    const cols = 110;
-    const rows = 6;
+    // X column count is random, capped at 100.
+    const cols = 1 + Math.floor(Math.random() * 100);
+    const rows = 3;
     const frag = document.createDocumentFragment();
     for (let r = 0; r < rows; r++) {
       const line = document.createElement("div");
@@ -847,6 +873,10 @@ let WORDS = [
       target = navpicos[Math.floor(Math.random() * navpicos.length)];
       targetType = "navpico";
     } else {
+      // No targets available - check if all targets are permanently destroyed
+      if (checkAllTargetsDestroyed()) {
+        stopLaserTimer();
+      }
       return; // No targets available
     }
 
@@ -1064,11 +1094,26 @@ let WORDS = [
   }
   window.addEventListener("resize", fill);
 
+  let laserTimer = null;
   function startLaserTimer() {
-    const laserTimer = setInterval(() => {
+    laserTimer = setInterval(() => {
       if (pre.isConnected) fireLaser();
       else clearInterval(laserTimer);
     }, 35);
+  }
+
+  function stopLaserTimer() {
+    if (laserTimer) {
+      clearInterval(laserTimer);
+      laserTimer = null;
+    }
+  }
+
+  function checkAllTargetsDestroyed() {
+    const digits = pre.querySelectorAll("span.hex-dim, span.hex-hot");
+    const natoActs = window.natoActs || [];
+    const navpicos = document.querySelectorAll(".navpico");
+    return digits.length === 0 && natoActs.length === 0 && navpicos.length === 0;
   }
 })();
 
@@ -1364,7 +1409,7 @@ let WORDS = [
   const canvas = document.getElementById("matrix");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const fontSize = 16;
+  const fontSize = 17;
   const letterSpacing = 350;
   const trailLen = 88;
   const chars =

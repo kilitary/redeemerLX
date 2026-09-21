@@ -23,3 +23,4 @@ data/
 .vtcode/
 .zed/
 logs/
+.kagents/planning-with-files/

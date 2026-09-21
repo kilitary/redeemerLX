@@ -1,3 +1,5 @@
+// Events page – wrapped in IIFE for bundle safety.
+(function () {
 let events = [],
   abilities = [],
   selected = null;
@@ -260,64 +262,68 @@ function selectEv(e) {
   renderEv();
 }
 
-$("ev-filter").addEventListener("input", renderEv);
+// Only initialise on the events page (safe to include in a bundle).
+if ($("ev-grid")) {
+  $("ev-filter").addEventListener("input", renderEv);
 
-$("ev-create").addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  const name = $("ev-new-name").value.trim();
-  if (!name) return;
-  const r = await fetch("/api/events", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name }),
+  $("ev-create").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const name = $("ev-new-name").value.trim();
+    if (!name) return;
+    const r = await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!r.ok) {
+      alert(await r.text());
+      return;
+    }
+    $("ev-new-name").value = "";
+    events = await (await fetch("/api/events")).json();
+    updateCounter();
+    renderEv();
   });
-  if (!r.ok) {
-    alert(await r.text());
-    return;
-  }
-  $("ev-new-name").value = "";
-  events = await (await fetch("/api/events")).json();
-  updateCounter();
-  renderEv();
-});
 
-$("ev-edit-form").addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  if (selected === null) return;
-  const grid = $("ev-abil-grid");
-  const raw = grid && grid.dataset.value;
-  const ability_id = raw ? parseInt(raw, 10) : null;
-  const r = await fetch("/api/events/" + selected, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: $("ev-name").value,
-      description: $("ev-desc").value,
-      event_per_10msec: parseFloat($("ev-per").value) || 0,
-      ability_id,
-    }),
+  $("ev-edit-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (selected === null) return;
+    const grid = $("ev-abil-grid");
+    const raw = grid && grid.dataset.value;
+    const ability_id = raw ? parseInt(raw, 10) : null;
+    const r = await fetch("/api/events/" + selected, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: $("ev-name").value,
+        description: $("ev-desc").value,
+        event_per_10msec: parseFloat($("ev-per").value) || 0,
+        ability_id,
+      }),
+    });
+    if (!r.ok) {
+      alert(await r.text());
+      return;
+    }
+    events = await (await fetch("/api/events")).json();
+    const updated = events.find((x) => x.id === selected);
+    if (updated) selectEv(updated);
   });
-  if (!r.ok) {
-    alert(await r.text());
-    return;
-  }
-  events = await (await fetch("/api/events")).json();
-  const updated = events.find((x) => x.id === selected);
-  if (updated) selectEv(updated);
-});
 
-$("ev-delete").addEventListener("click", async () => {
-  if (selected === null) return;
-  if (!confirm("Delete this event?")) return;
-  await fetch("/api/events/" + selected, { method: "DELETE" });
-  selected = null;
-  const tgt = $("ev-edit-title") || $("ev-edit-tgt");
-  if (tgt) tgt.textContent = "SELECT EVENT :: NONE";
-  syncAbility("");
-  $("ev-delete").hidden = true;
-  events = await (await fetch("/api/events")).json();
-  updateCounter();
-  renderEv();
-});
+  $("ev-delete").addEventListener("click", async () => {
+    if (selected === null) return;
+    if (!confirm("Delete this event?")) return;
+    await fetch("/api/events/" + selected, { method: "DELETE" });
+    selected = null;
+    const tgt = $("ev-edit-title") || $("ev-edit-tgt");
+    if (tgt) tgt.textContent = "SELECT EVENT :: NONE";
+    syncAbility("");
+    $("ev-delete").hidden = true;
+    events = await (await fetch("/api/events")).json();
+    updateCounter();
+    renderEv();
+  });
 
-load();
+  load();
+}
+})();

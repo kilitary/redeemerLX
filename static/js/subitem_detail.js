@@ -64,8 +64,10 @@ function initSubitemAbilities() {
 }
 
 // Auto-initialize on DOM ready
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initSubitemAbilities);
-} else {
-    initSubitemAbilities();
+if (document.getElementById('subitem-ability-grid')) {
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initSubitemAbilities);
+    } else {
+        initSubitemAbilities();
+    }
 }

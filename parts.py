@@ -17,6 +17,20 @@ from dataclasses import dataclass, field
 
 ALL_PARTS: list[str] = [
     # science fiction
+    "Quantum Echo Resonator",
+    "Temporal Anomaly Core",
+    "Quantum Entanglement Drive",
+    "Quantum Phase Flux Engine",
+    "Chrono-Drive Module",
+    "Wormhole Stabilizer",
+    "Temporal Warp Field",
+    "Entropy Converter",
+    "Phase Shift Generator",
+    "Zero-Gravity Chamber",
+    "Null Gravity Core",
+    "Hyperion Drive Coil",
+    "Singularity Anchor",
+    "Anomalous Capacitor",
     "Anomalous Capacitor",
     "Exotic Alloy Plate",
     "Psy-emitter Lens",

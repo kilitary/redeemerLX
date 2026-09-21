@@ -6,6 +6,7 @@
         <title>{% block title %}Dark Members CP-2 partial secret items block{% endblock %}</title>
         <link rel="stylesheet" href="/static/css/base.css?v={{ app_version }}" />
         <link rel="stylesheet" href="/static/css/nav_overlay.css?v={{ app_version }}" />
+        {% block styles %}{% endblock %}
     </head>
     <body>
         <header class="app-bar">
@@ -173,8 +174,9 @@
         </div>
         <div id="nav-overlay" aria-hidden="true"></div>
         <div id="greek" class="greek-word" aria-hidden="true"></div>
-        <script src="/static/js/base.js?v={{ app_version }}"></script>
-        <script src="/static/js/profile.js?v={{ app_version }}"></script>
-        <script src="/static/js/nav_overlay.js?v={{ app_version }}"></script>
+        <script src="/static/js/base.js?v={{ app_version }}" defer></script>
+        <script src="/static/js/nav_overlay.js?v={{ app_version }}" defer></script>
+        <script src="/static/js/profile.js?v={{ app_version }}" defer></script>
+        {% block scripts %}{% endblock %}
     </body>
 </html>

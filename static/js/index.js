@@ -1,3 +1,5 @@
+  // Only initialise on the items list page (safe to include in a bundle).
+  if (document.getElementById("live-status")) {
   (function () {
   const status = document.getElementById("live-status");
   const form = document.getElementById("filters");
@@ -388,3 +390,4 @@
     if (!document.hidden) refresh();
   }, 5000);
 })();
+}

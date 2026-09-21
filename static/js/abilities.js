@@ -1,6 +1,10 @@
+// Abilities editor – wrapped in IIFE for bundle safety (shares global scope
+// with events.js which also declares `abilities` / `selected`).
+(function () {
 let abilities = [],
   params = [],
   selected = null;
+
 async function load() {
   abilities = await (await fetch("/api/abilities")).json();
   params = await (await fetch("/api/parameters")).json();
@@ -22,6 +26,7 @@ async function load() {
     } catch (e) {}
   }
 }
+
 function renderAb() {
   const q = (document.getElementById("ab-filter").value || "").toLowerCase();
   const grid = document.getElementById("ab-grid");
@@ -36,6 +41,7 @@ function renderAb() {
       grid.appendChild(d);
     });
 }
+
 function selectAb(a) {
   selected = a.id;
   document.getElementById("ab-edit-title").textContent = "Edit: " + a.name;
@@ -46,6 +52,7 @@ function selectAb(a) {
   renderAb();
   loadParams();
 }
+
 async function loadParams() {
   if (!selected) return;
   const rows = await (
@@ -74,57 +81,62 @@ async function loadParams() {
     body.appendChild(tr);
   });
 }
-document.getElementById("ab-filter").addEventListener("input", renderAb);
-document
-  .getElementById("ab-edit-form")
-  .addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (!selected) return;
-    await fetch("/api/abilities/" + selected, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: document.getElementById("ab-name").value,
-        description: document.getElementById("ab-desc").value,
-        description_ru: document.getElementById("ab-desc-ru").value,
-      }),
+
+// Only initialise on the abilities page (safe to include in a bundle).
+if (document.getElementById("ab-grid")) {
+  document.getElementById("ab-filter").addEventListener("input", renderAb);
+  document
+    .getElementById("ab-edit-form")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!selected) return;
+      await fetch("/api/abilities/" + selected, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: document.getElementById("ab-name").value,
+          description: document.getElementById("ab-desc").value,
+          description_ru: document.getElementById("ab-desc-ru").value,
+        }),
+      });
+      abilities = await (await fetch("/api/abilities")).json();
+      renderAb();
     });
-    abilities = await (await fetch("/api/abilities")).json();
-    renderAb();
+  document.getElementById("ap-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!selected) return alert("select ability");
+    const body = {
+      ability_id: selected,
+      param_id: parseInt(document.getElementById("ap-param").value),
+      modify_coefficient_per_10msec:
+        parseFloat(document.getElementById("ap-coeff").value) || 0,
+      operation: document.getElementById("ap-op").value,
+      curve: document.getElementById("ap-curve").value,
+      stack_mode: document.getElementById("ap-stack").value,
+      priority: parseInt(document.getElementById("ap-priority").value) || 0,
+      min_value: document.getElementById("ap-min").value
+        ? parseFloat(document.getElementById("ap-min").value)
+        : null,
+      max_value: document.getElementById("ap-max").value
+        ? parseFloat(document.getElementById("ap-max").value)
+        : null,
+      base_value: document.getElementById("ap-base").value
+        ? parseFloat(document.getElementById("ap-base").value)
+        : null,
+      enabled: document.getElementById("ap-enabled").checked,
+      description: document.getElementById("ap-desc").value,
+    };
+    const r = await fetch("/api/ability-params", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      alert(await r.text());
+      return;
+    }
+    loadParams();
   });
-document.getElementById("ap-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!selected) return alert("select ability");
-  const body = {
-    ability_id: selected,
-    param_id: parseInt(document.getElementById("ap-param").value),
-    modify_coefficient_per_10msec:
-      parseFloat(document.getElementById("ap-coeff").value) || 0,
-    operation: document.getElementById("ap-op").value,
-    curve: document.getElementById("ap-curve").value,
-    stack_mode: document.getElementById("ap-stack").value,
-    priority: parseInt(document.getElementById("ap-priority").value) || 0,
-    min_value: document.getElementById("ap-min").value
-      ? parseFloat(document.getElementById("ap-min").value)
-      : null,
-    max_value: document.getElementById("ap-max").value
-      ? parseFloat(document.getElementById("ap-max").value)
-      : null,
-    base_value: document.getElementById("ap-base").value
-      ? parseFloat(document.getElementById("ap-base").value)
-      : null,
-    enabled: document.getElementById("ap-enabled").checked,
-    description: document.getElementById("ap-desc").value,
-  };
-  const r = await fetch("/api/ability-params", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) {
-    alert(await r.text());
-    return;
-  }
-  loadParams();
-});
-load();
+  load();
+}
+})();

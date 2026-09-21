@@ -149,7 +149,7 @@ class Version:
         return self.__str__()
 
 
-APP_VERSION = str(Version("1.36.18"))
+APP_VERSION = str(Version("1.36.24").bump())
 logger.info(f"App version: {APP_VERSION}")
 templates.env.globals["app_version"] = APP_VERSION
 

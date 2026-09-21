@@ -98,5 +98,7 @@ block content %} {% block breadcrumbs %}
         </div>
     </form>
 </div>
-<script src="/static/js/subitem_detail.js?v={{ app_version }}"></script>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/subitem_detail.js?v={{ app_version }}" defer></script>
 {% endblock %}

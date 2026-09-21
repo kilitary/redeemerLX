@@ -1,6 +1,8 @@
-{% extends "base.html" %} {% block title %}Combat Duel{% endblock %} {% block
+{% extends "base.html" %} {% block title %}Combat Duel{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="/static/css/combat_duel.css?v={{ app_version }}" />
+{% endblock %} {% block
 content %}
-<script src="/static/js/combat_duel.js?v={{ app_version }}"></script>
 <div class="page-header">
     <div>
         <h1>Combat Tunnel</h1>
@@ -33,4 +35,7 @@ content %}
         </table>
     </p>
 </div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/combat_duel.js?v={{ app_version }}" defer></script>
 {% endblock %}

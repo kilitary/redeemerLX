@@ -1,6 +1,7 @@
-{% extends "base.html" %} {% block title %}Test Facility{% endblock %} {% block
-content %}
+{% extends "base.html" %} {% block title %}Test Facility{% endblock %}
+{% block styles %}
 <link rel="stylesheet" href="/static/css/test_facility.css?v={{ app_version }}" />
+{% endblock %} {% block content %}
 <div class="cc">
     <div class="grid-bg"></div>
     <div class="scanlines"></div>
@@ -43,5 +44,7 @@ content %}
     </div>
 </div>
 
-<script src="/static/js/test_facility.js?v={{ app_version }}"></script>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/test_facility.js?v={{ app_version }}" defer></script>
 {% endblock %}

@@ -82,7 +82,9 @@ function initWarFactory() {
             genEl.textContent = "· gen " + s.generation;
             logRowsEl.textContent = s.total_log_rows;
             renderAuto(s.auto);
-            renderLastTick(s.auto && s.auto.last_result ? s.auto.last_result : null);
+            renderLastTick(
+                s.auto && s.auto.last_result ? s.auto.last_result : null,
+            );
         } catch (_) {}
         try {
             const r = await fetch("/war/factory/leaderboard?limit=20");
@@ -93,18 +95,34 @@ function initWarFactory() {
 
     function renderLastTick(t) {
         const el = $("wf-last-tick-summary");
-        if (!t) { el.textContent = ""; return; }
+        if (!t) {
+            el.textContent = "";
+            return;
+        }
         const broken = t.tested.broken;
-        const brokenHtml = broken > 0
-            ? '<span class="num-bad">🔴 ' + broken + " broken</span>"
-            : '<span class="num-ok">🟢 0 broken</span>';
+        const brokenHtml =
+            broken > 0
+                ? '<span class="num-bad">🔴 ' + broken + " broken</span>"
+                : '<span class="num-ok">🟢 0 broken</span>';
         el.innerHTML =
-            "built=<span class='num-ok'>" + t.built + "</span>" +
-            " · joined=<span class='num-neu'>" + t.joined + "</span>" +
-            " · mutated=<span class='num-neu'>" + t.mutated_props + "</span>" +
-            " · tested=<span class='num-neu'>" + t.tested.ok + "/" + t.tested.sample + "</span> · " +
+            "built=<span class='num-ok'>" +
+            t.built +
+            "</span>" +
+            " · joined=<span class='num-neu'>" +
+            t.joined +
+            "</span>" +
+            " · mutated=<span class='num-neu'>" +
+            t.mutated_props +
+            "</span>" +
+            " · tested=<span class='num-neu'>" +
+            t.tested.ok +
+            "/" +
+            t.tested.sample +
+            "</span> · " +
             brokenHtml +
-            " · battles=<span class='num-ok'>" + t.battles.length + "</span>";
+            " · battles=<span class='num-ok'>" +
+            t.battles.length +
+            "</span>";
     }
 
     function esc(s) {
@@ -120,25 +138,48 @@ function initWarFactory() {
         const rounds = md ? md[1] : null;
         let text = md ? md[2] : line.trim();
 
-        if (text === "ROSTER:") return { icon: "📜", cls: "wf-roster", title: text, body: "" };
-        if (/^unit /.test(text)) return { icon: "🤖", cls: "wf-roster", title: text, body: "" };
-        if (/^parameters:/.test(text)) return { icon: "⚙️", cls: "wf-roster-sub", title: text, body: "" };
-        if (/^ability .*->/.test(text)) return { icon: "🔧", cls: "wf-roster-sub", title: text, body: "" };
-        if (/^abilities:/.test(text)) return { icon: "🔋", cls: "wf-roster-sub", title: text, body: "" };
-        if (/^battle rejected$/.test(text)) return { icon: "⛔", cls: "wf-reject", title: text, body: "" };
-        if (/^draw$/.test(text)) return { icon: "🤝", cls: "wf-neu", title: text, body: "" };
-        if (/^[A-Z]: /.test(text) && /initiative/.test(text)) return { icon: "🏁", cls: "wf-init", title: text, body: "" };
+        if (text === "ROSTER:")
+            return { icon: "📜", cls: "wf-roster", title: text, body: "" };
+        if (/^unit /.test(text))
+            return { icon: "🤖", cls: "wf-roster", title: text, body: "" };
+        if (/^parameters:/.test(text))
+            return { icon: "⚙️", cls: "wf-roster-sub", title: text, body: "" };
+        if (/^ability .*->/.test(text))
+            return { icon: "🔧", cls: "wf-roster-sub", title: text, body: "" };
+        if (/^abilities:/.test(text))
+            return { icon: "🔋", cls: "wf-roster-sub", title: text, body: "" };
+        if (/^battle rejected$/.test(text))
+            return { icon: "⛔", cls: "wf-reject", title: text, body: "" };
+        if (/^draw$/.test(text))
+            return { icon: "🤝", cls: "wf-neu", title: text, body: "" };
+        if (/^[A-Z]: /.test(text) && /initiative/.test(text))
+            return { icon: "🏁", cls: "wf-init", title: text, body: "" };
 
         const tail = rounds ? " r" + rounds : "";
-        if (/PARASITE strike/.test(text)) return { icon: "🦠", cls: "wf-para", title: text.replace(/PARASITE/, "").trim(), body: "", rounds: tail };
-        if (/MALFUNCTION/.test(text)) return { icon: "💥", cls: "wf-malf", title: text, body: "" };
-        if (/DISARMED/.test(text)) return { icon: "🔒", cls: "wf-disarm", title: text, body: "" };
-        if (/NO-HIT/.test(text)) return { icon: "🛑", cls: "wf-disarm", title: text, body: "" };
-        if (/eliminated/.test(text)) return { icon: "💀", cls: "wf-elim", title: text, body: "" };
-        if (/ disabled via /.test(text)) return { icon: "🔌", cls: "wf-disarm", title: text, body: "" };
-        if (/ counter /.test(text)) return { icon: "🔁", cls: "wf-counter", title: text, body: "" };
-        if (/src=.*delta=.*dst=.*edge=/.test(text)) return { icon: "🎯", cls: "wf-strike", title: text, body: "" };
-        if (/exceeded bounds/.test(text)) return { icon: "🚨", cls: "wf-malf", title: text, body: "" };
+        if (/PARASITE strike/.test(text))
+            return {
+                icon: "🦠",
+                cls: "wf-para",
+                title: text.replace(/PARASITE/, "").trim(),
+                body: "",
+                rounds: tail,
+            };
+        if (/MALFUNCTION/.test(text))
+            return { icon: "💥", cls: "wf-malf", title: text, body: "" };
+        if (/DISARMED/.test(text))
+            return { icon: "🔒", cls: "wf-disarm", title: text, body: "" };
+        if (/NO-HIT/.test(text))
+            return { icon: "🛑", cls: "wf-disarm", title: text, body: "" };
+        if (/eliminated/.test(text))
+            return { icon: "💀", cls: "wf-elim", title: text, body: "" };
+        if (/ disabled via /.test(text))
+            return { icon: "🔌", cls: "wf-disarm", title: text, body: "" };
+        if (/ counter /.test(text))
+            return { icon: "🔁", cls: "wf-counter", title: text, body: "" };
+        if (/src=.*delta=.*dst=.*edge=/.test(text))
+            return { icon: "🎯", cls: "wf-strike", title: text, body: "" };
+        if (/exceeded bounds/.test(text))
+            return { icon: "🚨", cls: "wf-malf", title: text, body: "" };
 
         // Fall back to a plain row.
         return { icon: "•", cls: "wf-raw", title: text, body: "" };
@@ -146,15 +187,33 @@ function initWarFactory() {
 
     function renderBattle(b) {
         const head = document.createElement("div");
-        head.className = "wf-battle-head " + (b.battle_rejected ? "wf-reject" : (b.winner_name ? "wf-win" : "wf-neu"));
+        head.className =
+            "wf-battle-head " +
+            (b.battle_rejected
+                ? "wf-reject"
+                : b.winner_name
+                  ? "wf-win"
+                  : "wf-neu");
         const status = b.battle_rejected
             ? "⛔ rejected"
-            : (b.winner_name
-                ? "🏆 " + esc(b.winner_name)
-                : "🤝 draw");
+            : b.winner_name
+              ? "🏆 " + esc(b.winner_name)
+              : "🤝 draw";
         head.innerHTML =
-            esc(b.map) + " · " + status +
-            " · <span class='wf-rounds'>" + b.rounds + " round" + (b.rounds === 1 ? "" : "s") + "</span>";
+            esc(b.map) +
+            " · " +
+            status +
+            " · <span class='wf-rounds'>" +
+            b.rounds +
+            " round" +
+            (b.rounds === 1 ? "" : "s") +
+            "</span>";
+
+        const unitNames = [];
+        (b.log || []).forEach((line) => {
+            const m = /^\s*unit\s+(.+)/.exec(line);
+            if (m) unitNames.push(m[1].trim());
+        });
 
         const body = document.createElement("div");
         body.className = "wf-battle-body";
@@ -166,7 +225,16 @@ function initWarFactory() {
             ic.className = "wf-ic";
             ic.textContent = icon;
             const tx = document.createElement("span");
-            tx.textContent = title;
+            if (unitNames.length && cls !== "wf-roster" && cls !== "wf-roster-sub") {
+                let html = esc(title);
+                unitNames.forEach((n) => {
+                    const en = esc(n);
+                    html = html.split(en).join('<span class="wf-unit-name">' + en + '</span>');
+                });
+                tx.innerHTML = html;
+            } else {
+                tx.textContent = title;
+            }
             row.appendChild(ic);
             row.appendChild(tx);
             body.appendChild(row);
@@ -181,7 +249,10 @@ function initWarFactory() {
 
     function renderLastTickDetail(j, jsonMode) {
         const el = $("wf-last");
-        if (!j) { el.innerHTML = ""; return; }
+        if (!j) {
+            el.innerHTML = "";
+            return;
+        }
         el.innerHTML = "";
         el.classList.remove("wf-pre");
         if (jsonMode) {
@@ -195,13 +266,27 @@ function initWarFactory() {
         const header = document.createElement("div");
         header.className = "wf-tick-head";
         header.innerHTML =
-            "🔄 gen <span class='num-ok'>" + j.generation + "</span>" +
-            " · built <span class='num-ok'>" + j.built + "</span>" +
-            " · joined <span class='num-neu'>" + j.joined + "</span>" +
-            " · mutated <span class='num-neu'>" + j.mutated_props + "</span>" +
-            " · tested <span class='num-neu'>" + j.tested.ok + "/" + j.tested.sample + "</span>";
+            "🔄 gen <span class='num-ok'>" +
+            j.generation +
+            "</span>" +
+            " · built <span class='num-ok'>" +
+            j.built +
+            "</span>" +
+            " · joined <span class='num-neu'>" +
+            j.joined +
+            "</span>" +
+            " · mutated <span class='num-neu'>" +
+            j.mutated_props +
+            "</span>" +
+            " · tested <span class='num-neu'>" +
+            j.tested.ok +
+            "/" +
+            j.tested.sample +
+            "</span>";
         container.appendChild(header);
-        (j.battles || []).forEach((b) => container.appendChild(renderBattle(b)));
+        (j.battles || []).forEach((b) =>
+            container.appendChild(renderBattle(b)),
+        );
         el.appendChild(container);
     }
 
@@ -209,16 +294,35 @@ function initWarFactory() {
         if (!a) return;
         const st = $("wf-auto-state");
         const running = a.running;
-        const dotCls = running ? "dot dot-on" : (a.errors > 0 ? "dot dot-err" : "dot dot-off");
-        st.innerHTML = '<span class="' + dotCls + '"></span>' + (running ? "running" : "stopped");
+        const dotCls = running
+            ? "dot dot-on"
+            : a.errors > 0
+              ? "dot dot-err"
+              : "dot dot-off";
+        st.innerHTML =
+            '<span class="' +
+            dotCls +
+            '"></span>' +
+            (running ? "running" : "stopped");
         const detail = $("wf-auto-detail");
-        const err = a.last_error ? " · <span class='num-bad'>error: " + a.last_error + "</span>" : "";
+        const err = a.last_error
+            ? " · <span class='num-bad'>error: " + a.last_error + "</span>"
+            : "";
         detail.innerHTML =
-            " · ticks=<span class='num-neu'>" + a.tick_count + "</span>" +
-            " · gen=<span class='num-neu'>" + a.generation + "</span>" +
-            " · interval=" + a.interval + "s" +
-            " · pop≤" + a.max_population +
-            " · errors=" + a.errors + err;
+            " · ticks=<span class='num-neu'>" +
+            a.tick_count +
+            "</span>" +
+            " · gen=<span class='num-neu'>" +
+            a.generation +
+            "</span>" +
+            " · interval=" +
+            a.interval +
+            "s" +
+            " · pop≤" +
+            a.max_population +
+            " · errors=" +
+            a.errors +
+            err;
     }
 
     function buildQuery(p) {
@@ -258,7 +362,7 @@ function initWarFactory() {
             renderLastTickDetail(j, $("wf-json-mode").checked);
             // Advance seed so a fixed seed yields distinct ticks.
             if (p.seed != null) {
-                p.seed = (p.seed * 1103515245 + 12345) & 0x7FFFFFFF;
+                p.seed = (p.seed * 1103515245 + 12345) & 0x7fffffff;
                 $("wf-seed").value = String(p.seed);
             }
             await refreshState();
@@ -279,7 +383,10 @@ function initWarFactory() {
     async function autoStart() {
         const q = new URLSearchParams();
         q.set("interval", String(parseFloat($("wf-auto-interval").value) || 5));
-        q.set("max_population", String(parseInt($("wf-auto-maxpop").value, 10) || 400));
+        q.set(
+            "max_population",
+            String(parseInt($("wf-auto-maxpop").value, 10) || 400),
+        );
         const mg = $("wf-auto-maxgen").value.trim();
         if (mg) q.set("max_generations", String(parseInt(mg, 10)));
         const r = await fetch("/war/factory/auto/start?" + q.toString(), {
@@ -303,8 +410,10 @@ function initWarFactory() {
 }
 
 // Auto-initialize on DOM ready
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initWarFactory);
-} else {
-    initWarFactory();
+if (document.getElementById("wf-status")) {
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initWarFactory);
+    } else {
+        initWarFactory();
+    }
 }

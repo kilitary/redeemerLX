@@ -1,0 +1,93 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]: Jesus Christ Nuclear Revenge D-Days Panel (v1.36.21)
+    - link "Items" [ref=e4] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui
+    - link "New item" [ref=e11] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/items/new
+    - link "Test facility" [ref=e14] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/test-facility
+    - link "Combat duel" [ref=e18] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/combat-duel
+    - link "Warehouse" [ref=e24] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/warehouse
+    - link "Abilities" [ref=e29] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/abilities
+    - link "Events" [ref=e34] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/events
+    - link "War factory" [ref=e38] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/war-factory
+    - link "API docs" [ref=e42] [cursor=pointer]:
+      - /url: /docs
+  - img "Random ASCII art" [ref=e47]:
+    - generic [ref=e48]:
+      - generic [ref=e49]: BBCB925C1EE42AED8 D64E A 2AB1E 440C4 3 378D 9A9A57E75 AB2F4 D9C215636C494 02DB5 2BD 04FDA739 49F
+      - generic [ref=e50]: 13F75E5A98 6 FEA971 0 C7862 F6F33EF 54D09 60A7BFD542FE 0B239587 237 C2F95E084 FA 2B3A3D 6C578 5
+      - generic [ref=e51]: D51D9AE E12726A84204 67 CAE0E7DF84 E13 BF620FD29589580F953A1 440 2 5 614C70A F9BAC470A6D 35A8AC93
+    - generic:
+      - generic "Sum of non-red hex digits": "315"
+      - generic "Sum of red hex digits": "0"
+  - navigation "Breadcrumb" [ref=e52]:
+    - link "Home" [ref=e53] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui
+    - text: /ui/abilities
+  - main [ref=e54]:
+    - generic [ref=e55]:
+      - heading "Abilities editor" [level=1] [ref=e56]
+      - generic [ref=e57]: Dynamic ability → param mapping
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - heading "Abilities" [level=2] [ref=e60]
+        - textbox "Filter..." [ref=e61]
+        - generic [ref=e62]:
+          - heading "Select ability" [level=3] [ref=e63]
+          - generic [ref=e64]:
+            - text: Name
+            - textbox "Name" [ref=e65]
+          - generic [ref=e66]:
+            - text: Description
+            - textbox "Description" [ref=e67]
+          - generic [ref=e68]:
+            - text: Description RU
+            - textbox "Description RU" [ref=e69]
+          - button "Save ability" [ref=e70] [cursor=pointer]
+      - generic [ref=e71]:
+        - heading "Ability → Parameters" [level=2] [ref=e72]
+        - generic [ref=e73]:
+          - combobox [ref=e74]
+          - spinbutton "coeff /10ms" [ref=e75]
+          - combobox [ref=e76]:
+            - option "add" [selected]
+            - option "multiply"
+            - option "set"
+          - combobox [ref=e77]:
+            - option "linear" [selected]
+            - option "exp"
+            - option "log"
+          - combobox [ref=e78]:
+            - option "stack" [selected]
+            - option "replace"
+            - option "max"
+          - spinbutton "priority" [ref=e79]: "0"
+          - spinbutton "min" [ref=e80]
+          - spinbutton "max" [ref=e81]
+          - spinbutton "base" [ref=e82]
+          - generic [ref=e83] [cursor=pointer]:
+            - checkbox "enabled" [checked] [ref=e84]
+            - text: enabled
+          - textbox "description" [ref=e85]
+          - button "Add link" [ref=e86] [cursor=pointer]
+        - table [ref=e87]:
+          - rowgroup [ref=e88]:
+            - row [ref=e89]:
+              - columnheader "Param" [ref=e90]
+              - columnheader "coeff/10ms" [ref=e91]
+              - columnheader "op" [ref=e92]
+              - columnheader "curve" [ref=e93]
+              - columnheader "stack" [ref=e94]
+              - columnheader "prio" [ref=e95]
+              - columnheader "enabled" [ref=e96]
+              - columnheader [ref=e97]
+          - rowgroup
+  - generic [aria-hidden]: rho
+  - generic [aria-hidden]: "GET /ui/abilities query: 4.03ms db: 0.15ms middleware: 0.90ms total: 4.93ms · 10:13:57 PM"

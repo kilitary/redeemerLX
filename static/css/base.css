@@ -48,6 +48,10 @@ body {
     padding: 0;
 }
 
+html {
+    font-size: 14px; /* base font +1px over browser default (16px) */
+}
+
 body {
     font-family: "Terminus", monospace;
     line-height: 1;
@@ -120,7 +124,7 @@ body::after {
 .tv-label {
     color: #eee;
     font-family: "Terminus", monospace;
-    font-size: 12px;
+    font-size: 13px;
     letter-spacing: 6px;
     text-align: center;
     padding-top: 6px;
@@ -146,7 +150,7 @@ main {
     padding-left: 33px;
     box-sizing: border-box;
     font-family: "Terminus", monospace;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.4;
     color: var(--md-on-surface-variant);
     border: 1px solid rgba(126, 242, 154, 0.25);
@@ -183,7 +187,7 @@ main {
     border-left: 1px solid var(--md-outline-variant);
     color: var(--md-on-surface-variant);
     opacity: 0.75;
-    font-size: 12px;
+    font-size: 13px;
     align-self: center;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -206,7 +210,7 @@ main {
     margin: 0;
     padding: 0;
     font-family: "Terminus", monospace;
-    font-size: 9.75px;
+    font-size: 10.75px;
     line-height: 1.15;
     color: #d9cfb4;
     text-align: center;
@@ -378,7 +382,7 @@ svg.laser line.laser-core {
 }
 .hero-sum {
     font-family: "Terminus", monospace;
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 500;
     letter-spacing: 0.05em;
     padding: 0.3rem 0.55rem;
@@ -457,7 +461,7 @@ svg.laser line.laser-core {
     z-index: 3;
     pointer-events: none;
     font-family: "Terminus", monospace;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     animation: ghost-smoke 1s ease-out forwards;
     user-select: none;

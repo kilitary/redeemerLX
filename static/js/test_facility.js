@@ -232,8 +232,10 @@ function initTestFacility() {
 }
 
 // Auto-initialize on DOM ready
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initTestFacility);
-} else {
-    initTestFacility();
+if (document.getElementById("tf-body")) {
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initTestFacility);
+    } else {
+        initTestFacility();
+    }
 }

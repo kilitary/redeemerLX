@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ "Edit" if item else "New" }} item{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="/static/css/item_form.css?v={{ app_version }}" />
+{% endblock %}
 {% block content %}
 
-  <link rel="stylesheet" href="/static/css/item_form.css?v={{ app_version }}" />
   <div class="page-header">
     <h1>{{ "Edit" if item else "New" }} unit</h1>
     <a class="btn btn-tonal" href="{{ url_for('ui_index') }}">Back</a>
@@ -187,5 +189,7 @@
     </form>
   </div>
   <script id="item-form-data" type="application/json">{{ {"picker_names": subitem_names, "abilities": abilities} | tojson }}</script>
-  <script src="/static/js/item_form.js?v={{ app_version }}"></script>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/item_form.js?v={{ app_version }}" defer></script>
 {% endblock %}

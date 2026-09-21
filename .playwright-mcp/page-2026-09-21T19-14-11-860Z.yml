@@ -1,0 +1,421 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]: Jesus Christ Nuclear Revenge D-Days Panel (v1.36.21)
+    - link "Items" [ref=e4] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui
+    - link "New item" [ref=e11] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/items/new
+    - link "Test facility" [ref=e14] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/test-facility
+    - link "Combat duel" [ref=e18] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/combat-duel
+    - link "Warehouse" [ref=e24] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/warehouse
+    - link "Abilities" [ref=e29] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/abilities
+    - link "Events" [ref=e34] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/events
+    - link "War factory" [ref=e38] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui/war-factory
+    - link "API docs" [ref=e42] [cursor=pointer]:
+      - /url: /docs
+  - img "Random ASCII art" [ref=e47]:
+    - generic:
+      - generic "Sum of non-red hex digits": "0"
+      - generic "Sum of red hex digits": "0"
+    - generic: "6"
+    - generic: B
+    - generic: "5"
+    - generic: "2"
+    - generic: D
+    - generic: A
+    - generic: "0"
+    - generic: C
+    - generic: "9"
+    - generic: "9"
+    - generic: C
+    - generic: "2"
+    - generic: "7"
+    - generic: "8"
+    - generic: "8"
+    - generic: "2"
+    - generic: B
+    - generic: D
+    - generic: "4"
+    - generic: A
+    - generic: "1"
+    - generic: B
+  - navigation "Breadcrumb" [ref=e52]:
+    - link "Home" [ref=e53] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/ui
+    - text: /ui/abilities
+  - main [ref=e54]:
+    - generic [ref=e55]:
+      - heading "Abilities editor" [level=1] [ref=e56]
+      - generic [ref=e57]: Dynamic ability → param mapping
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - heading "Abilities" [level=2] [ref=e60]
+        - textbox "Filter..." [ref=e61]
+        - generic [ref=e99]:
+          - generic [ref=e308] [cursor=pointer]: touch
+          - generic [ref=e309] [cursor=pointer]: wrap
+          - generic [ref=e310] [cursor=pointer]: unwrap
+          - generic [ref=e311] [cursor=pointer]: align
+          - generic [ref=e312] [cursor=pointer]: misalign
+          - generic [ref=e313] [cursor=pointer]: connect
+          - generic [ref=e314] [cursor=pointer]: deconnect
+          - generic [ref=e315] [cursor=pointer]: split
+          - generic [ref=e316] [cursor=pointer]: merge
+          - generic [ref=e317] [cursor=pointer]: rotate
+          - generic [ref=e318] [cursor=pointer]: rotate-back
+          - generic [ref=e319] [cursor=pointer]: scale
+          - generic [ref=e320] [cursor=pointer]: translate
+          - generic [ref=e321] [cursor=pointer]: invert
+          - generic [ref=e322] [cursor=pointer]: mirror
+          - generic [ref=e323] [cursor=pointer]: skew
+          - generic [ref=e324] [cursor=pointer]: distort
+          - generic [ref=e325] [cursor=pointer]: straighten
+          - generic [ref=e326] [cursor=pointer]: bend
+          - generic [ref=e327] [cursor=pointer]: fold
+          - generic [ref=e328] [cursor=pointer]: unfold
+          - generic [ref=e329] [cursor=pointer]: stretch
+          - generic [ref=e330] [cursor=pointer]: compress
+          - generic [ref=e331] [cursor=pointer]: expand
+          - generic [ref=e332] [cursor=pointer]: flatten
+          - generic [ref=e333] [cursor=pointer]: extrude
+          - generic [ref=e334] [cursor=pointer]: punch
+          - generic [ref=e335] [cursor=pointer]: stamp
+          - generic [ref=e336] [cursor=pointer]: engrave
+          - generic [ref=e337] [cursor=pointer]: etch
+          - generic [ref=e338] [cursor=pointer]: polish
+          - generic [ref=e339] [cursor=pointer]: buff
+          - generic [ref=e340] [cursor=pointer]: sand
+          - generic [ref=e341] [cursor=pointer]: grind
+          - generic [ref=e342] [cursor=pointer]: drill
+          - generic [ref=e343] [cursor=pointer]: bore
+          - generic [ref=e344] [cursor=pointer]: ream
+          - generic [ref=e345] [cursor=pointer]: tap
+          - generic [ref=e346] [cursor=pointer]: thread
+          - generic [ref=e347] [cursor=pointer]: cut
+          - generic [ref=e348] [cursor=pointer]: trim
+          - generic [ref=e349] [cursor=pointer]: carve
+          - generic [ref=e350] [cursor=pointer]: mold
+          - generic [ref=e351] [cursor=pointer]: cast
+          - generic [ref=e352] [cursor=pointer]: forge
+          - generic [ref=e353] [cursor=pointer]: weld
+          - generic [ref=e354] [cursor=pointer]: braze
+          - generic [ref=e355] [cursor=pointer]: solder
+          - generic [ref=e356] [cursor=pointer]: rivet
+          - generic [ref=e357] [cursor=pointer]: bolt
+          - generic [ref=e358] [cursor=pointer]: screw
+          - generic [ref=e359] [cursor=pointer]: glue
+          - generic [ref=e360] [cursor=pointer]: clip
+          - generic [ref=e361] [cursor=pointer]: pin
+          - generic [ref=e362] [cursor=pointer]: clamp
+          - generic [ref=e363] [cursor=pointer]: tighten
+          - generic [ref=e364] [cursor=pointer]: loosen
+          - generic [ref=e365] [cursor=pointer]: seal
+          - generic [ref=e366] [cursor=pointer]: unseal
+          - generic [ref=e367] [cursor=pointer]: lock
+          - generic [ref=e368] [cursor=pointer]: unlock
+          - generic [ref=e369] [cursor=pointer]: fasten
+          - generic [ref=e370] [cursor=pointer]: unfasten
+          - generic [ref=e371] [cursor=pointer]: mount
+          - generic [ref=e372] [cursor=pointer]: unmount
+          - generic [ref=e373] [cursor=pointer]: install
+          - generic [ref=e374] [cursor=pointer]: uninstall
+          - generic [ref=e375] [cursor=pointer]: insert
+          - generic [ref=e376] [cursor=pointer]: extract
+          - generic [ref=e377] [cursor=pointer]: load
+          - generic [ref=e378] [cursor=pointer]: unload
+          - generic [ref=e379] [cursor=pointer]: charge
+          - generic [ref=e380] [cursor=pointer]: discharge
+          - generic [ref=e381] [cursor=pointer]: recharge
+          - generic [ref=e382] [cursor=pointer]: power-on
+          - generic [ref=e383] [cursor=pointer]: power-off
+          - generic [ref=e384] [cursor=pointer]: reset
+          - generic [ref=e385] [cursor=pointer]: calibrate
+          - generic [ref=e386] [cursor=pointer]: recalibrate
+          - generic [ref=e387] [cursor=pointer]: tune
+          - generic [ref=e388] [cursor=pointer]: detune
+          - generic [ref=e389] [cursor=pointer]: encode
+          - generic [ref=e390] [cursor=pointer]: decode
+          - generic [ref=e391] [cursor=pointer]: encrypt
+          - generic [ref=e392] [cursor=pointer]: decrypt
+          - generic [ref=e393] [cursor=pointer]: compress-data
+          - generic [ref=e394] [cursor=pointer]: decompress
+          - generic [ref=e395] [cursor=pointer]: format
+          - generic [ref=e396] [cursor=pointer]: reformat
+          - generic [ref=e397] [cursor=pointer]: initialize
+          - generic [ref=e398] [cursor=pointer]: configure
+          - generic [ref=e399] [cursor=pointer]: deconfigure
+          - generic [ref=e400] [cursor=pointer]: upgrade
+          - generic [ref=e401] [cursor=pointer]: downgrade
+          - generic [ref=e402] [cursor=pointer]: firm-up
+          - generic [ref=e403] [cursor=pointer]: update
+          - generic [ref=e404] [cursor=pointer]: patch
+          - generic [ref=e405] [cursor=pointer]: repair
+          - generic [ref=e406] [cursor=pointer]: service
+          - generic [ref=e407] [cursor=pointer]: maintain
+          - generic [ref=e408] [cursor=pointer]: lubricate
+          - generic [ref=e409] [cursor=pointer]: oil
+          - generic [ref=e410] [cursor=pointer]: grease
+          - generic [ref=e411] [cursor=pointer]: clean
+          - generic [ref=e412] [cursor=pointer]: wash
+          - generic [ref=e413] [cursor=pointer]: decontaminate
+          - generic [ref=e414] [cursor=pointer]: sterilize
+          - generic [ref=e415] [cursor=pointer]: inspect
+          - generic [ref=e416] [cursor=pointer]: test
+          - generic [ref=e417] [cursor=pointer]: retest
+          - generic [ref=e418] [cursor=pointer]: monitor
+          - generic [ref=e419] [cursor=pointer]: measure
+          - generic [ref=e420] [cursor=pointer]: weigh
+          - generic [ref=e421] [cursor=pointer]: meter
+          - generic [ref=e422] [cursor=pointer]: pressurize
+          - generic [ref=e423] [cursor=pointer]: depressurize
+          - generic [ref=e424] [cursor=pointer]: vent
+          - generic [ref=e425] [cursor=pointer]: purge
+          - generic [ref=e426] [cursor=pointer]: fill
+          - generic [ref=e427] [cursor=pointer]: refill
+          - generic [ref=e428] [cursor=pointer]: drain
+          - generic [ref=e429] [cursor=pointer]: empty
+          - generic [ref=e430] [cursor=pointer]: cool
+          - generic [ref=e431] [cursor=pointer]: heat
+          - generic [ref=e432] [cursor=pointer]: freeze
+          - generic [ref=e433] [cursor=pointer]: thaw
+          - generic [ref=e434] [cursor=pointer]: melt
+          - generic [ref=e435] [cursor=pointer]: anneal
+          - generic [ref=e436] [cursor=pointer]: temper
+          - generic [ref=e437] [cursor=pointer]: quench
+          - generic [ref=e438] [cursor=pointer]: harden
+          - generic [ref=e439] [cursor=pointer]: soften
+          - generic [ref=e440] [cursor=pointer]: harden-shell
+          - generic [ref=e441] [cursor=pointer]: sharpen
+          - generic [ref=e442] [cursor=pointer]: blunt
+          - generic [ref=e443] [cursor=pointer]: magnify
+          - generic [ref=e444] [cursor=pointer]: minify
+          - generic [ref=e445] [cursor=pointer]: focus
+          - generic [ref=e446] [cursor=pointer]: defocus
+          - generic [ref=e447] [cursor=pointer]: polarize
+          - generic [ref=e448] [cursor=pointer]: depolarize
+          - generic [ref=e449] [cursor=pointer]: magnetize
+          - generic [ref=e450] [cursor=pointer]: demagnetize
+          - generic [ref=e451] [cursor=pointer]: shield
+          - generic [ref=e452] [cursor=pointer]: unshield
+          - generic [ref=e453] [cursor=pointer]: insulate
+          - generic [ref=e454] [cursor=pointer]: expose
+          - generic [ref=e455] [cursor=pointer]: arm
+          - generic [ref=e456] [cursor=pointer]: disarm
+          - generic [ref=e457] [cursor=pointer]: prime
+          - generic [ref=e458] [cursor=pointer]: deselect
+          - generic [ref=e459] [cursor=pointer]: select
+          - generic [ref=e460] [cursor=pointer]: activate
+          - generic [ref=e461] [cursor=pointer]: deactivate
+          - generic [ref=e462] [cursor=pointer]: enable
+          - generic [ref=e463] [cursor=pointer]: disable
+          - generic [ref=e464] [cursor=pointer]: isolate
+          - generic [ref=e465] [cursor=pointer]: integrate
+          - generic [ref=e466] [cursor=pointer]: disintegrate
+          - generic [ref=e467] [cursor=pointer]: amalgamate
+          - generic [ref=e468] [cursor=pointer]: segregate
+          - generic [ref=e469] [cursor=pointer]: sort
+          - generic [ref=e470] [cursor=pointer]: index
+          - generic [ref=e471] [cursor=pointer]: categorize
+          - generic [ref=e472] [cursor=pointer]: label
+          - generic [ref=e473] [cursor=pointer]: relabel
+          - generic [ref=e474] [cursor=pointer]: tag
+          - generic [ref=e475] [cursor=pointer]: untag
+          - generic [ref=e476] [cursor=pointer]: mark
+          - generic [ref=e477] [cursor=pointer]: unmark
+          - generic [ref=e478] [cursor=pointer]: brand
+          - generic [ref=e479] [cursor=pointer]: serialize
+          - generic [ref=e480] [cursor=pointer]: register
+          - generic [ref=e481] [cursor=pointer]: deregister
+          - generic [ref=e482] [cursor=pointer]: assign
+          - generic [ref=e483] [cursor=pointer]: transfer
+          - generic [ref=e484] [cursor=pointer]: deliver
+          - generic [ref=e485] [cursor=pointer]: retrieve
+          - generic [ref=e486] [cursor=pointer]: dispatch
+          - generic [ref=e487] [cursor=pointer]: receive
+          - generic [ref=e488] [cursor=pointer]: stack
+          - generic [ref=e489] [cursor=pointer]: unstack
+          - generic [ref=e490] [cursor=pointer]: nest
+          - generic [ref=e491] [cursor=pointer]: unnest
+          - generic [ref=e492] [cursor=pointer]: fold-in
+          - generic [ref=e493] [cursor=pointer]: expand-out
+          - generic [ref=e494] [cursor=pointer]: package
+          - generic [ref=e495] [cursor=pointer]: unpackage
+          - generic [ref=e496] [cursor=pointer]: crate
+          - generic [ref=e497] [cursor=pointer]: uncrate
+          - generic [ref=e498] [cursor=pointer]: palletize
+          - generic [ref=e499] [cursor=pointer]: unpalletize
+          - generic [ref=e500] [cursor=pointer]: insla
+          - generic [ref=e501] [cursor=pointer]: insland
+          - generic [ref=e502] [cursor=pointer]: outsland
+          - generic [ref=e503] [cursor=pointer]: outland
+          - generic [ref=e504] [cursor=pointer]: dearm
+          - generic [ref=e505] [cursor=pointer]: ainsulate
+          - generic [ref=e506] [cursor=pointer]: aminsulate
+          - generic [ref=e507] [cursor=pointer]: kinsulate
+          - generic [ref=e508] [cursor=pointer]: deshield
+          - generic [ref=e509] [cursor=pointer]: desshield
+          - generic [ref=e510] [cursor=pointer]: unban
+          - generic [ref=e511] [cursor=pointer]: hreban
+          - generic [ref=e512] [cursor=pointer]: dimark
+        - generic [ref=e62]:
+          - 'heading "Edit: touch" [level=3] [ref=e513]'
+          - generic [ref=e64]:
+            - text: Name
+            - textbox "Name" [ref=e65]: touch
+          - generic [ref=e66]:
+            - text: Description
+            - textbox "Description" [ref=e67]: make physical contact with the object
+          - generic [ref=e68]:
+            - text: Description RU
+            - textbox "Description RU" [ref=e69]: вступить в физический контакт с объектом
+          - button "Save ability" [ref=e70] [cursor=pointer]
+      - generic [ref=e71]:
+        - heading "Ability → Parameters — touch" [level=2] [ref=e514]
+        - generic [ref=e73]:
+          - combobox [ref=e74]:
+            - option "mass" [selected]
+            - option "volume"
+            - option "density"
+            - option "length"
+            - option "width"
+            - option "height"
+            - option "diameter"
+            - option "thickness"
+            - option "surface_area"
+            - option "cross_sectional_area"
+            - option "temperature"
+            - option "melting_point"
+            - option "boiling_point"
+            - option "thermal_conductivity"
+            - option "specific_heat"
+            - option "thermal_expansion"
+            - option "tensile_strength"
+            - option "yield_strength"
+            - option "compressive_strength"
+            - option "shear_strength"
+            - option "youngs_modulus"
+            - option "poisson_ratio"
+            - option "hardness_brinell"
+            - option "hardness_rockwell"
+            - option "hardness_vickers"
+            - option "elongation"
+            - option "impact_toughness"
+            - option "fatigue_limit"
+            - option "fracture_toughness"
+            - option "electrical_resistivity"
+            - option "electrical_conductivity"
+            - option "dielectric_strength"
+            - option "relative_permittivity"
+            - option "magnetic_permeability"
+            - option "magnetic_susceptibility"
+            - option "corrosion_resistance"
+            - option "uv_resistance"
+            - option "weather_resistance"
+            - option "fire_rating"
+            - option "flammability"
+            - option "autoignition_temp"
+            - option "viscosity"
+            - option "surface_tension"
+            - option "vapor_pressure"
+            - option "solubility"
+            - option "ph"
+            - option "sound_velocity"
+            - option "acoustic_impedance"
+            - option "damping_coefficient"
+            - option "radioactivity"
+            - option "half_life"
+            - option "cost_per_kg"
+            - option "cost_per_m3"
+            - option "embodied_energy"
+            - option "carbon_footprint"
+            - option "recyclability"
+            - option "warranty_period"
+            - option "transparency"
+            - option "reflectivity"
+            - option "color"
+          - spinbutton "coeff /10ms" [ref=e75]: "1.5"
+          - combobox [ref=e76]:
+            - option "add" [selected]
+            - option "multiply"
+            - option "set"
+          - combobox [ref=e77]:
+            - option "linear" [selected]
+            - option "exp"
+            - option "log"
+          - combobox [ref=e78]:
+            - option "stack" [selected]
+            - option "replace"
+            - option "max"
+          - spinbutton "priority" [ref=e79]: "0"
+          - spinbutton "min" [ref=e80]
+          - spinbutton "max" [ref=e81]
+          - spinbutton "base" [ref=e82]
+          - generic [ref=e83] [cursor=pointer]:
+            - checkbox "enabled" [checked] [ref=e84]
+            - text: enabled
+          - textbox "description" [ref=e85]: test param
+          - button "Add link" [active] [ref=e86] [cursor=pointer]
+        - table [ref=e87]:
+          - rowgroup [ref=e88]:
+            - row [ref=e89]:
+              - columnheader "Param" [ref=e90]
+              - columnheader "coeff/10ms" [ref=e91]
+              - columnheader "op" [ref=e92]
+              - columnheader "curve" [ref=e93]
+              - columnheader "stack" [ref=e94]
+              - columnheader "prio" [ref=e95]
+              - columnheader "enabled" [ref=e96]
+              - columnheader [ref=e97]
+          - rowgroup [ref=e515]:
+            - row [ref=e549]:
+              - cell "carbon_footprint" [ref=e550]
+              - cell "2.52544" [ref=e551]
+              - cell "add" [ref=e552]
+              - cell "linear" [ref=e553]
+              - cell "stack" [ref=e554]
+              - cell "8" [ref=e555]
+              - cell "yes" [ref=e556]
+              - cell [ref=e557]:
+                - button "del" [ref=e558] [cursor=pointer]
+                - button "edit" [ref=e559] [cursor=pointer]
+            - row [ref=e560]:
+              - cell "corrosion_resistance" [ref=e561]
+              - cell "4.12052" [ref=e562]
+              - cell "add" [ref=e563]
+              - cell "linear" [ref=e564]
+              - cell "stack" [ref=e565]
+              - cell "9" [ref=e566]
+              - cell "yes" [ref=e567]
+              - cell [ref=e568]:
+                - button "del" [ref=e569] [cursor=pointer]
+                - button "edit" [ref=e570] [cursor=pointer]
+            - row [ref=e571]:
+              - cell "density" [ref=e572]
+              - cell "-2.58061" [ref=e573]
+              - cell "add" [ref=e574]
+              - cell "linear" [ref=e575]
+              - cell "stack" [ref=e576]
+              - cell "7" [ref=e577]
+              - cell "yes" [ref=e578]
+              - cell [ref=e579]:
+                - button "del" [ref=e580] [cursor=pointer]
+                - button "edit" [ref=e581] [cursor=pointer]
+            - row [ref=e582]:
+              - cell "mass" [ref=e583]
+              - cell "1.5" [ref=e584]
+              - cell "add" [ref=e585]
+              - cell "linear" [ref=e586]
+              - cell "stack" [ref=e587]
+              - cell "0" [ref=e588]
+              - cell "yes" [ref=e589]
+              - cell [ref=e590]:
+                - button "del" [ref=e591] [cursor=pointer]
+                - button "edit" [ref=e592] [cursor=pointer]
+  - generic [aria-hidden]: rho
+  - generic [aria-hidden]: "GET /ui/abilities query: 4.03ms db: 0.15ms middleware: 0.90ms total: 4.93ms · 10:13:57 PM"

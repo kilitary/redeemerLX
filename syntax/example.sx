@@ -1,0 +1,97 @@
+# Example Synthex program — defines units, params, abilities, and alters them.
+
+# ── Units ──────────────────────────────────────────────────────────────────
+
+unit meter {
+  symbol: "m";
+  factor: 1.0;
+  offset: 0.0;
+}
+
+unit kilogram {
+  symbol: "kg";
+  factor: 1.0;
+  offset: 0.0;
+}
+
+unit second {
+  symbol: "s";
+  factor: 1.0;
+  offset: 0.0;
+}
+
+unit newton {
+  symbol: "N";
+  base: kilogram;
+  factor: 1.0;
+  offset: 0.0;
+}
+
+# ── Parameters ─────────────────────────────────────────────────────────────
+
+param strength {
+  type: "physical";
+  physical: "force";
+  default: 10.0;
+  range: [0.0, 100.0];
+  unit: newton;
+}
+
+param speed {
+  type: "physical";
+  physical: "velocity";
+  default: 5.0;
+  range: [0.0, 50.0];
+  unit: meter;
+}
+
+param resistance {
+  type: "physical";
+  physical: "impedance";
+  default: 1.0;
+  range: [0.0, 10.0];
+  formula: "strength / speed";
+}
+
+# ── Abilities ──────────────────────────────────────────────────────────────
+
+ability touch {
+  category: "contact";
+  desc: "make physical contact with the object";
+  desc_ru: "вступить в физический контакт с объектом";
+  params: [strength, resistance];
+}
+
+ability push {
+  category: "move";
+  desc: "apply force to move the object";
+  desc_ru: "приложить силу для перемещения объекта";
+  params: [strength, speed];
+}
+
+ability shield {
+  category: "protect";
+  desc: "absorb incoming force";
+  desc_ru: "поглотить входящую силу";
+  params: [resistance, strength];
+}
+
+# ── Alterations ────────────────────────────────────────────────────────────
+
+# Boost strength by 50%
+alter strength -> strength {
+  op: "mul";
+  value: 1.5;
+}
+
+# Set speed to a fixed value
+alter speed -> speed {
+  op: "set";
+  value: 12.0;
+}
+
+# Add extra resistance
+alter resistance -> resistance {
+  op: "add";
+  value: 2.5;
+}
