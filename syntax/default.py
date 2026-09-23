@@ -50,13 +50,14 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Token types
 # ---------------------------------------------------------------------------
 
+
 class TT(Enum):
     """Token type."""
+
     # Literals
     IDENT = auto()
     STRING = auto()
@@ -104,34 +105,35 @@ class TT(Enum):
 
 
 KEYWORDS: dict[str, TT] = {
-    'ability': TT.ABILITY,
-    'param': TT.PARAM,
-    'unit': TT.UNIT,
-    'alter': TT.ALTER,
-    'import': TT.IMPORT,
-    'category': TT.CATEGORY,
-    'desc': TT.DESC,
-    'desc_ru': TT.DESC_RU,
-    'params': TT.PARAMS,
-    'type': TT.TYPE,
-    'physical': TT.PHYSICAL,
-    'default': TT.DEFAULT,
-    'range': TT.RANGE,
-    'formula': TT.FORMULA,
-    'symbol': TT.SYMBOL,
-    'base': TT.BASE,
-    'factor': TT.FACTOR,
-    'offset': TT.OFFSET,
-    'op': TT.OP,
-    'value': TT.VALUE,
-    'min': TT.MIN,
-    'max': TT.MAX,
+    "ability": TT.ABILITY,
+    "param": TT.PARAM,
+    "unit": TT.UNIT,
+    "alter": TT.ALTER,
+    "import": TT.IMPORT,
+    "category": TT.CATEGORY,
+    "desc": TT.DESC,
+    "desc_ru": TT.DESC_RU,
+    "params": TT.PARAMS,
+    "type": TT.TYPE,
+    "physical": TT.PHYSICAL,
+    "default": TT.DEFAULT,
+    "range": TT.RANGE,
+    "formula": TT.FORMULA,
+    "symbol": TT.SYMBOL,
+    "base": TT.BASE,
+    "factor": TT.FACTOR,
+    "offset": TT.OFFSET,
+    "op": TT.OP,
+    "value": TT.VALUE,
+    "min": TT.MIN,
+    "max": TT.MAX,
 }
 
 
 # ---------------------------------------------------------------------------
 # Token
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class Token:
@@ -144,6 +146,7 @@ class Token:
 # ---------------------------------------------------------------------------
 # Lexer
 # ---------------------------------------------------------------------------
+
 
 class Lexer:
     """Tokenize Synthex source."""
@@ -159,32 +162,38 @@ class Lexer:
         while self.pos < len(self.source):
             ch = self.source[self.pos]
 
-            if ch == '\n':
-                self.tokens.append(Token(TT.NEWLINE, '\\n', self.line, self.col))
+            if ch == "\n":
+                self.tokens.append(Token(TT.NEWLINE, "\\n", self.line, self.col))
                 self.pos += 1
                 self.line += 1
                 self.col = 1
             elif ch.isspace():
                 self.pos += 1
                 self.col += 1
-            elif ch == '#':
+            elif ch == "#":
                 self._skip_comment()
             elif ch == '"':
                 self._read_string()
-            elif ch in '{}[]:,;->':
+            elif ch in "{}[]:,;->":
                 self._read_punct(ch)
-            elif ch.isdigit() or (ch == '.' and self.pos + 1 < len(self.source) and self.source[self.pos + 1].isdigit()):
+            elif ch.isdigit() or (
+                ch == "."
+                and self.pos + 1 < len(self.source)
+                and self.source[self.pos + 1].isdigit()
+            ):
                 self._read_number()
-            elif ch.isalpha() or ch == '_':
+            elif ch.isalpha() or ch == "_":
                 self._read_ident()
             else:
-                raise SyntaxError(f"Unexpected character '{ch}' at {self.line}:{self.col}")
+                raise SyntaxError(
+                    f"Unexpected character '{ch}' at {self.line}:{self.col}"
+                )
 
-        self.tokens.append(Token(TT.EOF, '', self.line, self.col))
+        self.tokens.append(Token(TT.EOF, "", self.line, self.col))
         return self.tokens
 
     def _skip_comment(self) -> None:
-        while self.pos < len(self.source) and self.source[self.pos] != '\n':
+        while self.pos < len(self.source) and self.source[self.pos] != "\n":
             self.pos += 1
             self.col += 1
 
@@ -194,7 +203,7 @@ class Lexer:
         self.col += 1
         buf: list[str] = []
         while self.pos < len(self.source) and self.source[self.pos] != '"':
-            if self.source[self.pos] == '\\':
+            if self.source[self.pos] == "\\":
                 self.pos += 1
                 self.col += 1
                 if self.pos < len(self.source):
@@ -207,41 +216,59 @@ class Lexer:
             raise SyntaxError(f"Unterminated string at {self.line}:{start_col}")
         self.pos += 1  # skip closing quote
         self.col += 1
-        self.tokens.append(Token(TT.STRING, ''.join(buf), self.line, start_col))
+        self.tokens.append(Token(TT.STRING, "".join(buf), self.line, start_col))
 
     def _read_number(self) -> None:
         start_col = self.col
         start = self.pos
         has_dot = False
-        while self.pos < len(self.source) and (self.source[self.pos].isdigit() or self.source[self.pos] == '.'):
-            if self.source[self.pos] == '.':
+        while self.pos < len(self.source) and (
+            self.source[self.pos].isdigit() or self.source[self.pos] == "."
+        ):
+            if self.source[self.pos] == ".":
                 if has_dot:
                     break
                 has_dot = True
             self.pos += 1
             self.col += 1
-        num_str = self.source[start:self.pos]
-        self.tokens.append(Token(TT.NUMBER, float(num_str) if has_dot else int(num_str), self.line, start_col))
+        num_str = self.source[start : self.pos]
+        self.tokens.append(
+            Token(
+                TT.NUMBER,
+                float(num_str) if has_dot else int(num_str),
+                self.line,
+                start_col,
+            )
+        )
 
     def _read_ident(self) -> None:
         start_col = self.col
         start = self.pos
-        while self.pos < len(self.source) and (self.source[self.pos].isalnum() or self.source[self.pos] in '_-'):
+        while self.pos < len(self.source) and (
+            self.source[self.pos].isalnum() or self.source[self.pos] in "_-"
+        ):
             self.pos += 1
             self.col += 1
-        word = self.source[start:self.pos]
+        word = self.source[start : self.pos]
         tt = KEYWORDS.get(word, TT.IDENT)
         self.tokens.append(Token(tt, word, self.line, start_col))
 
     def _read_punct(self, ch: str) -> None:
         tt_map = {
-            '{': TT.LBRACE, '}': TT.RBRACE,
-            '[': TT.LBRACKET, ']': TT.RBRACKET,
-            ':': TT.COLON, ';': TT.SEMICOLON,
-            ',': TT.COMMA,
+            "{": TT.LBRACE,
+            "}": TT.RBRACE,
+            "[": TT.LBRACKET,
+            "]": TT.RBRACKET,
+            ":": TT.COLON,
+            ";": TT.SEMICOLON,
+            ",": TT.COMMA,
         }
-        if ch == '-' and self.pos + 1 < len(self.source) and self.source[self.pos + 1] == '>':
-            self.tokens.append(Token(TT.ARROW, '->', self.line, self.col))
+        if (
+            ch == "-"
+            and self.pos + 1 < len(self.source)
+            and self.source[self.pos + 1] == ">"
+        ):
+            self.tokens.append(Token(TT.ARROW, "->", self.line, self.col))
             self.pos += 2
             self.col += 2
         else:
@@ -253,6 +280,7 @@ class Lexer:
 # ---------------------------------------------------------------------------
 # AST nodes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class AbilityDecl:
@@ -311,6 +339,7 @@ class Program:
 # Parser
 # ---------------------------------------------------------------------------
 
+
 class Parser:
     """Parse token stream into AST."""
 
@@ -343,7 +372,9 @@ class Parser:
     def _expect(self, tt: TT) -> Token:
         tok = self._current()
         if tok.type != tt:
-            raise SyntaxError(f"Expected {tt.name}, got {tok.type.name} ('{tok.value}') at {tok.line}:{tok.col}")
+            raise SyntaxError(
+                f"Expected {tt.name}, got {tok.type.name} ('{tok.value}') at {tok.line}:{tok.col}"
+            )
         return self._advance()
 
     def _skip_newlines(self) -> None:
@@ -363,7 +394,9 @@ class Parser:
         elif tok.type == TT.IMPORT:
             return self._parse_import()
         else:
-            raise SyntaxError(f"Unexpected token {tok.type.name} ('{tok.value}') at {tok.line}:{tok.col}")
+            raise SyntaxError(
+                f"Unexpected token {tok.type.name} ('{tok.value}') at {tok.line}:{tok.col}"
+            )
 
     def _parse_ability(self) -> AbilityDecl:
         self._advance()  # consume 'ability'
@@ -389,7 +422,9 @@ class Parser:
                         self._advance()
                 self._expect(TT.RBRACKET)
             else:
-                raise SyntaxError(f"Unknown ability field '{key_tok.value}' at {key_tok.line}:{key_tok.col}")
+                raise SyntaxError(
+                    f"Unknown ability field '{key_tok.value}' at {key_tok.line}:{key_tok.col}"
+                )
             self._expect(TT.SEMICOLON)
             self._skip_newlines()
         self._expect(TT.RBRACE)
@@ -420,7 +455,9 @@ class Parser:
                 self._expect(TT.RBRACKET)
                 val = arr
             else:
-                raise SyntaxError(f"Unexpected value in param field at {self._current().line}:{self._current().col}")
+                raise SyntaxError(
+                    f"Unexpected value in param field at {self._current().line}:{self._current().col}"
+                )
             decl.fields.append(ParamField(key=str(key_tok.value), value=val))
             self._expect(TT.SEMICOLON)
             self._skip_newlines()
@@ -445,7 +482,9 @@ class Parser:
             elif key_tok.type == TT.OFFSET:
                 decl.offset = float(self._expect(TT.NUMBER).value)
             else:
-                raise SyntaxError(f"Unknown unit field '{key_tok.value}' at {key_tok.line}:{key_tok.col}")
+                raise SyntaxError(
+                    f"Unknown unit field '{key_tok.value}' at {key_tok.line}:{key_tok.col}"
+                )
             self._expect(TT.SEMICOLON)
             self._skip_newlines()
         self._expect(TT.RBRACE)
@@ -469,7 +508,9 @@ class Parser:
             elif self._at(TT.IDENT):
                 val = str(self._advance().value)
             else:
-                raise SyntaxError(f"Unexpected value in alter field at {self._current().line}:{self._current().col}")
+                raise SyntaxError(
+                    f"Unexpected value in alter field at {self._current().line}:{self._current().col}"
+                )
             stmt.fields.append(AlterField(key=str(key_tok.value), value=val))
             self._expect(TT.SEMICOLON)
             self._skip_newlines()
@@ -486,10 +527,13 @@ class Parser:
 # Evaluator — walks the AST and applies changes to ability/param registries
 # ---------------------------------------------------------------------------
 
+
 class Evaluator:
     """Interpret a Synthex program against live registries."""
 
-    def __init__(self, abilities: dict | None = None, params: dict | None = None) -> None:
+    def __init__(
+        self, abilities: dict | None = None, params: dict | None = None
+    ) -> None:
         self.abilities = abilities or {}
         self.params = params or {}
         self.units: dict[str, UnitDecl] = {}
@@ -508,9 +552,9 @@ class Evaluator:
             elif isinstance(stmt, ImportStmt):
                 pass  # imports resolved externally
         return {
-            'abilities': self.abilities,
-            'params': self.params,
-            'units': self.units,
+            "abilities": self.abilities,
+            "params": self.params,
+            "units": self.units,
         }
 
     def _register_ability(self, decl: AbilityDecl) -> None:
@@ -538,29 +582,29 @@ class Evaluator:
 
     def _alter_dict(self, d: dict, field: AlterField) -> None:
         op = field.key
-        if op == 'set':
-            d['value'] = field.value
-        elif op == 'add':
-            d['value'] = d.get('value', 0) + field.value
-        elif op == 'mul':
-            d['value'] = d.get('value', 0) * field.value
-        elif op == 'clamp':
+        if op == "set":
+            d["value"] = field.value
+        elif op == "add":
+            d["value"] = d.get("value", 0) + field.value
+        elif op == "mul":
+            d["value"] = d.get("value", 0) * field.value
+        elif op == "clamp":
             lo = field.value
             hi = field.value
-            for f in (field if isinstance(field, list) else []):
+            for f in field if isinstance(field, list) else []:
                 pass
-            d['value'] = max(lo, min(hi, d.get('value', 0)))
+            d["value"] = max(lo, min(hi, d.get("value", 0)))
         else:
             d[op] = field.value
 
     def _alter_param(self, param: ParamDecl, field: AlterField) -> None:
         for f in param.fields:
-            if f.key == 'default' and field.key in ('set', 'add', 'mul'):
-                if field.key == 'set':
+            if f.key == "default" and field.key in ("set", "add", "mul"):
+                if field.key == "set":
                     f.value = field.value
-                elif field.key == 'add':
+                elif field.key == "add":
                     f.value = float(f.value) + field.value
-                elif field.key == 'mul':
+                elif field.key == "mul":
                     f.value = float(f.value) * field.value
                 return
         param.fields.append(ParamField(key=field.key, value=field.value))
@@ -570,7 +614,10 @@ class Evaluator:
 # Convenience: compile + run in one step
 # ---------------------------------------------------------------------------
 
-def execute(source: str, abilities: dict | None = None, params: dict | None = None) -> dict[str, Any]:
+
+def execute(
+    source: str, abilities: dict | None = None, params: dict | None = None
+) -> dict[str, Any]:
     """Parse and evaluate Synthex source string."""
     tokens = Lexer(source).tokenize()
     ast = Parser(tokens).parse()
@@ -581,12 +628,13 @@ def execute(source: str, abilities: dict | None = None, params: dict | None = No
 # Pretty-printer
 # ---------------------------------------------------------------------------
 
+
 def dump(program: Program) -> str:
     """Pretty-print an AST back to Synthex source."""
     lines: list[str] = []
     for stmt in program.statements:
         if isinstance(stmt, AbilityDecl):
-            lines.append(f'ability {stmt.name} {{')
+            lines.append(f"ability {stmt.name} {{")
             if stmt.category:
                 lines.append(f'  category: "{stmt.category}";')
             if stmt.desc:
@@ -594,30 +642,30 @@ def dump(program: Program) -> str:
             if stmt.desc_ru:
                 lines.append(f'  desc_ru: "{stmt.desc_ru}";')
             if stmt.params:
-                lines.append(f'  params: [{", ".join(stmt.params)}];')
-            lines.append('}')
+                lines.append(f"  params: [{', '.join(stmt.params)}];")
+            lines.append("}")
         elif isinstance(stmt, ParamDecl):
-            lines.append(f'param {stmt.name} {{')
+            lines.append(f"param {stmt.name} {{")
             for f in stmt.fields:
                 v = f'"{f.value}"' if isinstance(f.value, str) else str(f.value)
-                lines.append(f'  {f.key}: {v};')
-            lines.append('}')
+                lines.append(f"  {f.key}: {v};")
+            lines.append("}")
         elif isinstance(stmt, UnitDecl):
-            lines.append(f'unit {stmt.name} {{')
+            lines.append(f"unit {stmt.name} {{")
             if stmt.symbol:
                 lines.append(f'  symbol: "{stmt.symbol}";')
             if stmt.base:
-                lines.append(f'  base: {stmt.base};')
-            lines.append(f'  factor: {stmt.factor};')
-            lines.append(f'  offset: {stmt.offset};')
-            lines.append('}')
+                lines.append(f"  base: {stmt.base};")
+            lines.append(f"  factor: {stmt.factor};")
+            lines.append(f"  offset: {stmt.offset};")
+            lines.append("}")
         elif isinstance(stmt, AlterStmt):
-            lines.append(f'alter {stmt.source} -> {stmt.target} {{')
+            lines.append(f"alter {stmt.source} -> {stmt.target} {{")
             for f in stmt.fields:
                 v = f'"{f.value}"' if isinstance(f.value, str) else str(f.value)
-                lines.append(f'  {f.key}: {v};')
-            lines.append('}')
+                lines.append(f"  {f.key}: {v};")
+            lines.append("}")
         elif isinstance(stmt, ImportStmt):
             lines.append(f'import "{stmt.path}"')
-        lines.append('')
-    return '\n'.join(lines)
+        lines.append("")
+    return "\n".join(lines)

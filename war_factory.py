@@ -125,16 +125,153 @@ def _random_bool(p: float = 0.5) -> bool:
 
 
 _GREEK = [
-    "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta",
-    "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi", "Rho",
-    "Sigma", "Tau", "Upsilon", "Phi", "Chi", "Psi", "Omega",
+    "Alpha",
+    "Beta",
+    "Gamma",
+    "Delta",
+    "Epsilon",
+    "Zeta",
+    "Eta",
+    "Theta",
+    "Iota",
+    "Kappa",
+    "Lambda",
+    "Mu",
+    "Nu",
+    "Xi",
+    "Omicron",
+    "Pi",
+    "Rho",
+    "Sigma",
+    "Tau",
+    "Upsilon",
+    "Phi",
+    "Chi",
+    "Psi",
+    "Omega",
 ]
 _WORDS = [
-    "Storm", "Blade", "Fang", "Claw", "Shield", "Bolt", "Strike", "Viper",
-    "Hawk", "Wolf", "Bear", "Fox", "Raven", "Cobra", "Scorpion", "Titan",
-    "Falcon", "Phoenix", "Dragon", "Serpent", "Shadow", "Phantom", "Spectre",
-    "Reaper", "Sentinel", "Guardian", "Warden", "Crusader", "Ronin", "Sage",
+    "Storm",
+    "Blade",
+    "Fang",
+    "Claw",
+    "Shield",
+    "Bolt",
+    "Strike",
+    "Viper",
+    "Hawk",
+    "Wolf",
+    "Bear",
+    "Fox",
+    "Raven",
+    "Cobra",
+    "Scorpion",
+    "Titan",
+    "Falcon",
+    "Phoenix",
+    "Dragon",
+    "Serpent",
+    "Shadow",
+    "Phantom",
+    "Spectre",
+    "Reaper",
+    "Sentinel",
+    "Guardian",
+    "Warden",
+    "Crusader",
+    "Ronin",
+    "Sage",
 ]
+
+
+# Mythological names drawn from Greek, Roman, Norse, Egyptian, Hindu, Japanese
+# and Mesoamerican mythologies. Used as the "myth year name" slot of a
+# battle name.
+_MYTH_NAMES = [
+    "Anubis", "Apollo", "Ares", "Ariadne", "Atlas", "Basilisk",
+    "Bastet", "Chimera", "Cronus", "Delphic", "Eos", "Fenrir",
+    "Freya", "Ganesha", "Garuda", "Hades", "Hel", "Hera",
+    "Hermes", "Hydra", "Iris", "Ishtar", "Jormungandr", "Krishna",
+    "Kitsune", "Loki", "Medusa", "Mimir", "Minotaur", "Morpheus",
+    "Narcissus", "Neith", "Nephthys", "Odin", "Osiris", "Perseus",
+    "Phoenix", "Poseidon", "Prometheus", "Quetzalcoatl", "Ra",
+    "Ragnarok", "Sekhmet", "Set", "Shiva", "Sphinx", "Susanoo",
+    "Tiamat", "Tyr", "Vishnu", "Ymir", "Zeus",
+]
+
+# English phonotactic atoms used to build plausible random words. Each
+# generated token is assembled from syllable-shaped chunks
+# (onset + nucleus + coda) so the result respects English phonotactics
+# instead of being a meaningless run of letters.
+_EN_VOWELS = [
+    "a", "e", "i", "o", "u",
+    "ai", "au", "ea", "ee", "ie", "oa", "oo", "ou",
+    "ow", "oy", "ue", "ui", "ay", "aw", "ew", "ey", "oi", "ei",
+]
+
+# Empty-onset / empty-coda entries are weighted a little heavier (repeated)
+# so open and vowel-initial syllables appear with realistic frequency.
+_EN_ONSETS = (
+    ["", "", "", "", ""]
+    + list("bcdfghklmnprstw")
+    + ["bl", "br", "ch", "cl", "cr", "dr", "fl", "fr", "gh", "gl",
+       "gr", "ph", "pl", "pr", "qu", "sc", "sk", "sl", "sm", "sn",
+       "sp", "st", "sw", "th", "tr", "tw", "wh", "wr", "sh", "scr",
+       "spr", "squ", "str", "thr", "skw"]
+)
+
+_EN_CODAS = (
+    ["", "", "", "", "", ""]
+    + list("bdfgklmnprstw")
+    + ["ck", "gh", "ld", "lg", "lt", "mb", "nd", "ng", "nk", "nt",
+       "ps", "pt", "sc", "sh", "sk", "sp", "st", "sw", "th", "ts",
+       "rt", "rd", "rk", "wl", "wr", "xt"]
+)
+
+
+def _en_syllable() -> str:
+    """One pronounceable English syllable (onset + nucleus + coda)."""
+    onset = random.choice(_EN_ONSETS)
+    nucleus = random.choice(_EN_VOWELS)
+    coda = random.choice(_EN_CODAS)
+    return onset + nucleus + coda
+
+
+def _random_english_word(min_len: int = 4, max_len: int = 8) -> str:
+    """A random 4-8 letter token that follows English phonotactics.
+
+    Single syllables are preferred (these read most like real English
+    words); only when a single syllable is too short do we append another
+    syllable, keeping the whole token within ``[min_len, max_len]``."""
+    for _ in range(200):
+        word = _en_syllable()
+        if len(word) > max_len:
+            continue
+        if len(word) < min_len:
+            # Grow with another syllable; stop before overflowing max_len.
+            while len(word) < min_len:
+                syl = _en_syllable()
+                if len(word) + len(syl) > max_len:
+                    break
+                word += syl
+        if min_len <= len(word) <= max_len:
+            return word[0].upper() + word[1:]
+    # Degenerate fallback: a bank of real English words so callers never
+    # receive an invalid token.
+    return random.choice(
+        ["Aegis", "Beryl", "Crane", "Drift", "Elven", "Frost", "Glimmer",
+         "Haven", "Iris", "Jasper", "Kelp", "Loom", "Meadow", "Nimbus",
+         "Onyx", "Plume", "Quarry", "Ridge", "Sedge", "Thorn", "Umber",
+         "Vale", "Wisp", "Yonder"]
+    )
+
+
+def _generate_battle_name() -> str:
+    """A battle name: Greek-letter specifier + myth name + English word."""
+    g = random.choice(_GREEK)
+    m = random.choice(_MYTH_NAMES)
+    w = _random_english_word(4, 8)
+    return f"{g} {m} {w}"
 
 
 def _build_part_name() -> str:
@@ -906,10 +1043,12 @@ class ArenaResult:
     log: list[str]
     survivors: list[int]
     battle_rejected: bool = False
+    battle_name: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "map": self.map,
+            "battle_name": self.battle_name,
             "winner_id": self.winner_id,
             "winner_name": self.winner_name,
             "loser_ids": list(self.loser_ids),
@@ -976,6 +1115,8 @@ def _ability_destruction_damage(link: dict) -> float:
         return random.uniform(dmg_min, dmg_max)
     except (TypeError, ValueError):
         return 0.0
+
+
 _MAX_STRIKE_DMG = 20.0
 _MIN_STRIKE_DMG = 0.2
 # Combat HP ceiling. Keeps the whole-population multiplicative HP mutation
@@ -1046,7 +1187,11 @@ def _ability_strike(
     return max(lo, min(hi, new))
 
 
-def _roster_lines(combatants: list[Combatant], opponents: list[Combatant], name_map: dict[str, str] | None = None) -> list[str]:
+def _roster_lines(
+    combatants: list[Combatant],
+    opponents: list[Combatant],
+    name_map: dict[str, str] | None = None,
+) -> list[str]:
     """Opening description of each unit's parameters and abilities (with the
     parameters each ability targets), prepended to the battle log. After each
     ability it prints whether the opposing side has a counterpart ability that
@@ -1059,13 +1204,14 @@ def _roster_lines(combatants: list[Combatant], opponents: list[Combatant], name_
     opp_names = ", ".join(_dn(o) for o in opponents)
     lines: list[str] = []
     for c in combatants:
-        lines.append(f"  unit {_dn(c)}")
-        pnames = c.param_names if c.param_names else {
-            pid: f"p{pid}" for pid in c.params
-        }
+        lines.append(f"  unit {c.name} [{_dn(c)}]")
+        pnames = (
+            c.param_names if c.param_names else {pid: f"p{pid}" for pid in c.params}
+        )
         if c.params:
             params_list = ", ".join(
-                f"{pnames.get(pid, f'p{pid}')}={val:.2f}" for pid, val in c.params.items()
+                f"{pnames.get(pid, f'p{pid}')}={val:.2f}"
+                for pid, val in c.params.items()
             )
             lines.append(f"    parameters: {params_list}")
         else:
@@ -1114,16 +1260,17 @@ def _run_battle(
 ) -> ArenaResult:
     log: list[str] = []
     battle_rejected = False
+    battle_name = _generate_battle_name()
     dn = _build_name_map(team_a, team_b)
     _dn = lambda c: dn.get(c.name, c.name)
     initiative = _pick_initiative(team_a, team_b)
     order = [team_a, team_b] if initiative == 0 else [team_b, team_a]
     log.append(
         f"{arena} initiative: {'A' if initiative == 0 else 'B'} "
-        f"({_dn(team_a[0]) if team_a else 'A'} vs "
-        f"{_dn(team_b[0]) if team_b else 'B'})"
+        f"({team_a[0].name if team_a else 'A'} [{_dn(team_a[0]) if team_a else ''}] vs "
+        f"{team_b[0].name if team_b else 'B'} [{_dn(team_b[0]) if team_b else ''}])"
     )
-    log.append("  ROSTER:")
+    log.append(f"  ROSTER: {battle_name}")
     log.extend(_roster_lines(team_a, team_b, dn))
     log.extend(_roster_lines(team_b, team_a, dn))
     rounds = 0
@@ -1232,7 +1379,8 @@ def _run_battle(
                     # ... and disable ALL of the defender's abilities linked to
                     # the out-of-bounds parameter (the parameter is corrupted).
                     doomed = [
-                        a for a in partner.abilities_data
+                        a
+                        for a in partner.abilities_data
                         if any(l["param_id"] == pid for l in a["params"])
                     ]
                     if doomed:
@@ -1306,7 +1454,9 @@ def _run_battle(
                     if c_exceeded:
                         # Destroy partner's counter-ability
                         partner_hp_before = partner.hp
-                        partner.abilities_data = [a for a in partner.abilities_data if a != c_ab]
+                        partner.abilities_data = [
+                            a for a in partner.abilities_data if a != c_ab
+                        ]
 
                         # Apply damage to partner when counter-ability is destroyed
                         dmg = _ability_destruction_damage(c_link)
@@ -1354,7 +1504,9 @@ def _run_battle(
                     # If counter-attack edge reaches zero (hit exactly on bound), destroy the counter-ability
                     if c_edge == 0.0 and not c_exceeded:
                         partner_hp_before = partner.hp
-                        partner.abilities_data = [a for a in partner.abilities_data if a != c_ab]
+                        partner.abilities_data = [
+                            a for a in partner.abilities_data if a != c_ab
+                        ]
 
                         # Apply damage to counter-attacker (partner) when their ability is destroyed
                         dmg = _ability_destruction_damage(c_link)
@@ -1407,7 +1559,12 @@ def _run_battle(
                 # Parasite vulnerability: when a parasite has no abilities but ECM is online,
                 # it can retaliate with a parasite strike before being destroyed.
                 for c in (src, partner):
-                    if c.alive and not c.abilities_data and c.parasite_chance > 0 and c.is_anti_emc:
+                    if (
+                        c.alive
+                        and not c.abilities_data
+                        and c.parasite_chance > 0
+                        and c.is_anti_emc
+                    ):
                         enemy = partner if c is src else src
                         if enemy.alive:
                             # Parasite retaliation: try parasite strike against enemy
@@ -1484,11 +1641,15 @@ def _run_battle(
     elif any(c.alive for c in team_a) and not any(c.alive for c in team_b):
         winner = max((c for c in team_a if c.alive), key=lambda c: c.hp, default=None)
         loser_ids = [c.unit_id for c in team_b if not c.alive]
-        log.append(f"Battle END: DEFEAT - {_dn(team_b[0]) if team_b else 'B'} eliminated after {rounds} rounds")
+        log.append(
+            f"Battle END: DEFEAT - {team_b[0].name if team_b else 'B'} [{_dn(team_b[0]) if team_b else ''}] eliminated after {rounds} rounds"
+        )
     elif any(c.alive for c in team_b) and not any(c.alive for c in team_a):
         winner = max((c for c in team_b if c.alive), key=lambda c: c.hp, default=None)
         loser_ids = [c.unit_id for c in team_a if not c.alive]
-        log.append(f"Battle END: DEFEAT - {_dn(team_a[0]) if team_a else 'A'} eliminated after {rounds} rounds")
+        log.append(
+            f"Battle END: DEFEAT - {team_a[0].name if team_a else 'A'} [{_dn(team_a[0]) if team_a else ''}] eliminated after {rounds} rounds"
+        )
     else:
         # Both teams have survivors - combat goes until one side defeats all
         # This should only happen in truly unwinnable scenarios, but log as draw
@@ -1504,30 +1665,38 @@ def _run_battle(
         log=log,
         survivors=survivors,
         battle_rejected=battle_rejected,
+        battle_name=battle_name,
     )
 
 
 def _unit_load_options():
-    from main import ItemDB, AbilityDB, AbilityParamDB, EventDB, ParameterDB, ItemParameterDB
     from sqlalchemy.orm import selectinload
+
+    from main import (
+        AbilityDB,
+        AbilityParamDB,
+        EventDB,
+        ItemDB,
+        ItemParameterDB,
+        ParameterDB,
+    )
+
     return [
         selectinload(ItemDB.subitems),
         selectinload(ItemDB.abilities)
         .selectinload(AbilityDB.ability_params)
         .selectinload(AbilityParamDB.parameter),
-        selectinload(ItemDB.abilities)
-        .selectinload(AbilityDB.events),
-        selectinload(ItemDB.item_parameters)
-        .selectinload(ItemParameterDB.parameter),
+        selectinload(ItemDB.abilities).selectinload(AbilityDB.events),
+        selectinload(ItemDB.item_parameters).selectinload(ItemParameterDB.parameter),
     ]
 
 
 def _pick_random(db: Session, n: int) -> list[ItemDB]:
-    from main import ItemDB
     from sqlalchemy import select
-    ids = db.scalars(
-        select(ItemDB.id).where(ItemDB.parent_id.is_(None))
-    ).all()
+
+    from main import ItemDB
+
+    ids = db.scalars(select(ItemDB.id).where(ItemDB.parent_id.is_(None))).all()
     if len(ids) < n:
         ids = list(ids)
     else:
@@ -1540,15 +1709,15 @@ def _pick_random(db: Session, n: int) -> list[ItemDB]:
 
 
 def _pick_combatants(db: Session, items) -> list[Combatant]:
-    from main import ItemDB
     from sqlalchemy import select
+
+    from main import ItemDB
+
     ids = [it.id for it in items]
     if not ids:
         return []
     fresh = db.scalars(
-        select(ItemDB)
-        .where(ItemDB.id.in_(ids))
-        .options(*_unit_load_options())
+        select(ItemDB).where(ItemDB.id.in_(ids)).options(*_unit_load_options())
     ).all()
     # Every unit that joins a battle must have at least one ability and be
     # linked to all parameters, so it is always a valid, armed combatant.
@@ -1588,8 +1757,10 @@ def run_random_2x2(db: Session, gen: int) -> ArenaResult | None:
 
 
 def run_genetic_1x1(db: Session, gen: int) -> ArenaResult | None:
+    from sqlalchemy import desc, select
+
     from main import ItemDB
-    from sqlalchemy import select, desc
+
     top = db.scalars(select(ItemDB).order_by(desc(ItemDB.hp)).limit(2)).all()
     if len(top) < 2:
         return None
@@ -1598,8 +1769,10 @@ def run_genetic_1x1(db: Session, gen: int) -> ArenaResult | None:
 
 
 def run_genetic_1x2(db: Session, gen: int) -> ArenaResult | None:
+    from sqlalchemy import desc, select
+
     from main import ItemDB
-    from sqlalchemy import select, desc
+
     top = db.scalars(select(ItemDB).order_by(desc(ItemDB.hp)).limit(3)).all()
     if len(top) < 3:
         return None
@@ -1608,8 +1781,10 @@ def run_genetic_1x2(db: Session, gen: int) -> ArenaResult | None:
 
 
 def run_genetic_2x2(db: Session, gen: int) -> ArenaResult | None:
+    from sqlalchemy import desc, select
+
     from main import ItemDB
-    from sqlalchemy import select, desc
+
     top = db.scalars(select(ItemDB).order_by(desc(ItemDB.hp)).limit(4)).all()
     if len(top) < 4:
         return None
@@ -1802,7 +1977,7 @@ def leaderboard(db: Session, limit: int = 20) -> list[dict[str, Any]]:
                 "unit_id": wid,
                 "name": it.name,
                 "wins": wins[wid],
-                "fitness": 0.0, #_fitness(c),
+                "fitness": 0.0,  # _fitness(c),
                 "attack": c.attack,
                 "defense": c.defense,
                 "speed": c.speed,

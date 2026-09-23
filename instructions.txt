@@ -1,4 +1,0 @@
-THIS IS PROJECT INSTRUCTIONS:
-
-when doing code updates, alter the version in header. mark alpha, beta, and stable releases.
-dont use pkill.
