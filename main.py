@@ -149,7 +149,7 @@ class Version:
         return self.__str__()
 
 
-APP_VERSION = str(Version("1.36.26").bump())
+APP_VERSION = str(Version("1.37.0").bump())
 logger.info(f"App version: {APP_VERSION}")
 templates.env.globals["app_version"] = APP_VERSION
 
@@ -2263,11 +2263,143 @@ def _scale_oil(baby: ItemDB, factor: float) -> None:
 
 
 ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
-    # weight shaping
+    # operate: touch
+    "touch": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # manage: wrap
+    "wrap": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # manage: unwrap
+    "unwrap": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # move: align
+    "align": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # move: misalign
+    "misalign": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: connect
+    "connect": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: deconnect
+    "deconnect": (
+        lambda b: None,
+        "deconnect — no change",
+        "deconnect — без изменений",
+    ),
+    "split": (
+        lambda b: setattr(b, "quantity", b.quantity * 2),
+        "split — quantity ×2",
+        "раздвоен — количество ×2",
+    ),
+    "merge": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "merged — quantity +1",
+        "слит — количество +1",
+    ),
+    # move: rotate
+    "rotate": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # move: rotate-back
+    "rotate-back": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    "scale": (
+        lambda b: _scale_weight(b, 1.15),
+        "scaled up — weight +15%",
+        "увеличен — масса +15%",
+    ),
+    # move: translate
+    "translate": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # operate: invert
+    "invert": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # move: mirror
+    "mirror": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # shape: skew
+    "skew": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # shape: distort
+    "distort": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # shape: straighten
+    "straighten": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # shape: bend
+    "bend": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # shape: fold
+    "fold": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # shape: unfold
+    "unfold": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    "stretch": (
+        lambda b: _scale_weight(b, 1.2),
+        "stretched — weight +20%",
+        "растянут — масса +20%",
+    ),
     "compress": (
         lambda b: _scale_weight(b, 0.75),
         "compressed — weight −25%",
         "сжат — масса −25%",
+    ),
+    "expand": (
+        lambda b: _scale_weight(b, 1.3),
+        "expanded — weight +30%",
+        "расширен — масса +30%",
     ),
     "flatten": (
         lambda b: _scale_weight(b, 0.8),
@@ -2279,22 +2411,75 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "extruded — weight −10%",
         "протянут — масса −10%",
     ),
-    "stretch": (
-        lambda b: _scale_weight(b, 1.2),
-        "stretched — weight +20%",
-        "растянут — масса +20%",
+    "punch": (
+        lambda b: _scale_weight(b, 0.95),
+        "punched — weight −5%",
+        "пробит — масса −5%",
     ),
-    "expand": (
-        lambda b: _scale_weight(b, 1.3),
-        "expanded — weight +30%",
-        "расширен — масса +30%",
+    # cut: stamp
+    "stamp": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
     ),
-    "scale": (
-        lambda b: _scale_weight(b, 1.15),
-        "scaled up — weight +15%",
-        "увеличен — масса +15%",
+    "engrave": (
+        lambda b: _scale_price(b, 1.25),
+        "engraved — price +25%",
+        "выгравирован — цена +25%",
     ),
-    # cutting / removal
+    "etch": (
+        lambda b: _scale_price(b, 1.15),
+        "etched — price +15%",
+        "вытравлен — цена +15%",
+    ),
+    "polish": (
+        lambda b: _scale_price(b, 1.2),
+        "polished — price +20%",
+        "отполирован — цена +20%",
+    ),
+    "buff": (
+        lambda b: _scale_price(b, 1.1),
+        "buffed — price +10%",
+        "натёрт — цена +10%",
+    ),
+    "sand": (
+        lambda b: _scale_weight(b, 0.95),
+        "sanded — weight −5%",
+        "отшлифован — масса −5%",
+    ),
+    "grind": (
+        lambda b: _scale_weight(b, 0.9),
+        "ground — weight −10%",
+        "сточен — масса −10%",
+    ),
+    "drill": (
+        lambda b: _scale_weight(b, 0.95),
+        "drilled — weight −5%",
+        "просверлён — масса −5%",
+    ),
+    "bore": (
+        lambda b: _scale_weight(b, 0.95),
+        "bored — weight −5%",
+        "расточен — масса −5%",
+    ),
+    # cut: ream
+    "ream": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # cut: tap
+    "tap": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # cut: thread
+    "thread": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
     "cut": (
         lambda b: _scale_weight(b, 0.85),
         "cut — weight −15%",
@@ -2310,108 +2495,17 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "carved — weight −20%",
         "вырезан — масса −20%",
     ),
-    "grind": (
-        lambda b: _scale_weight(b, 0.9),
-        "ground — weight −10%",
-        "сточен — масса −10%",
-    ),
-    "sand": (
-        lambda b: _scale_weight(b, 0.95),
-        "sanded — weight −5%",
-        "отшлифован — масса −5%",
-    ),
-    "drill": (
-        lambda b: _scale_weight(b, 0.95),
-        "drilled — weight −5%",
-        "просверлён — масса −5%",
-    ),
-    "bore": (
-        lambda b: _scale_weight(b, 0.95),
-        "bored — weight −5%",
-        "расточен — масса −5%",
-    ),
-    "punch": (
-        lambda b: _scale_weight(b, 0.95),
-        "punched — weight −5%",
-        "пробит — масса −5%",
-    ),
-    "drain": (
-        lambda b: _scale_weight(b, 0.9),
-        "drained — weight −10%",
-        "осушен — масса −10%",
-    ),
-    "empty": (
-        lambda b: _scale_weight(b, 0.85),
-        "emptied — weight −15%",
-        "опорожнён — масса −15%",
-    ),
-    "vent": (
-        lambda b: _scale_weight(b, 0.95),
-        "vented — weight −5%",
-        "стравил давление — масса −5%",
-    ),
-    "purge": (
-        lambda b: _scale_weight(b, 0.9),
-        "purged — weight −10%",
-        "продувка — масса −10%",
-    ),
-    # finishing / value
-    "polish": (
-        lambda b: _scale_price(b, 1.2),
-        "polished — price +20%",
-        "отполирован — цена +20%",
-    ),
-    "buff": (
-        lambda b: _scale_price(b, 1.1),
-        "buffed — price +10%",
-        "натёрт — цена +10%",
-    ),
-    "engrave": (
-        lambda b: _scale_price(b, 1.25),
-        "engraved — price +25%",
-        "выгравирован — цена +25%",
-    ),
-    "etch": (
-        lambda b: _scale_price(b, 1.15),
-        "etched — price +15%",
-        "вытравлен — цена +15%",
-    ),
-    "sharpen": (
-        lambda b: _scale_price(b, 1.1),
-        "sharpened — price +10%",
-        "заточен — цена +10%",
-    ),
-    "clean": (
+    # shape: mold
+    "mold": (
         lambda b: _scale_price(b, 1.05),
-        "cleaned — price +5%",
-        "очищен — цена +5%",
+        "processed — price +5%",
+        "обработан — цена +5%",
     ),
-    "wash": (lambda b: _scale_price(b, 1.05), "washed — price +5%", "вымыт — цена +5%"),
-    "decontaminate": (
-        lambda b: _scale_price(b, 1.1),
-        "decontaminated — price +10%",
-        "дезактивирован — цена +10%",
-    ),
-    "sterilize": (
-        lambda b: _scale_price(b, 1.1),
-        "sterilized — price +10%",
-        "стерилизован — цена +10%",
-    ),
-    # metallurgy
-    "harden": (
-        lambda b: _scale_price(b, 1.15),
-        "hardened — price +15%",
-        "закалён — цена +15%",
-    ),
-    "temper": (
-        lambda b: _scale_price(b, 1.1),
-        "tempered — price +10%",
-        "отпущен — цена +10%",
-    ),
-    "anneal": (
+    # shape: cast
+    "cast": (
         lambda b: _scale_price(b, 1.05),
-        "annealed — price +5%",
-        "отожжён — цена +5%",
+        "processed — price +5%",
+        "обработан — цена +5%",
     ),
     "forge": (
         lambda b: _scale_price(b, 1.1),
@@ -2423,22 +2517,333 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "welded — price +10%",
         "сварен — цена +10%",
     ),
+    # join: braze
+    "braze": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: solder
+    "solder": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
     "rivet": (
         lambda b: _scale_price(b, 1.05),
         "riveted — price +5%",
         "склёпан — цена +5%",
     ),
-    "magnetize": (
+    # join: bolt
+    "bolt": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: screw
+    "screw": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: glue
+    "glue": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: clip
+    "clip": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: pin
+    "pin": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: clamp
+    "clamp": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # operate: tighten
+    "tighten": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # operate: loosen
+    "loosen": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    "seal": (
+        lambda b: (setattr(b, "water_resistant", True), _scale_price(b, 1.1)),
+        "sealed — water resistant",
+        "герметизирован — водонепроницаем",
+    ),
+    # protect: unseal
+    "unseal": (
+        lambda b: setattr(b, "is_proof", False),
+        "unprotected — no shield",
+        "незащищён — без щита",
+    ),
+    # operate: lock
+    "lock": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # operate: unlock
+    "unlock": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: fasten
+    "fasten": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: unfasten
+    "unfasten": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: mount
+    "mount": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: unmount
+    "unmount": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: install
+    "install": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: uninstall
+    "uninstall": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: insert
+    "insert": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # separate: extract
+    "extract": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # manage: load
+    "load": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # manage: unload
+    "unload": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # power: charge
+    "charge": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # power: discharge
+    "discharge": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # power: recharge
+    "recharge": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # power: power-on
+    "power-on": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # power: power-off
+    "power-off": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # data: reset
+    "reset": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # maintain: calibrate
+    "calibrate": (
         lambda b: _scale_price(b, 1.1),
-        "magnetized — price +10%",
-        "намагничен — цена +10%",
+        "finished — price +10%",
+        "обработан — цена +10%",
     ),
-    "demagnetize": (
-        lambda b: _scale_weight(b, 0.95),
-        "demagnetized — easier to move — weight −5%",
-        "размагничен — проще перемещать — масса −5%",
+    # maintain: recalibrate
+    "recalibrate": (
+        lambda b: _scale_price(b, 1.2),
+        "finished — price +20%",
+        "обработан — цена +20%",
     ),
-    # fluids
+    # maintain: tune
+    "tune": (
+        lambda b: _scale_price(b, 1.05),
+        "finished — price +5%",
+        "обработан — цена +5%",
+    ),
+    # maintain: detune
+    "detune": (
+        lambda b: None,
+        "detune — no change",
+        "detune — без изменений",
+    ),
+    # data: encode
+    "encode": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # data: decode
+    "decode": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # data: encrypt
+    "encrypt": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # data: decrypt
+    "decrypt": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # shape: compress-data
+    "compress-data": (
+        lambda b: _scale_weight(b, 0.85),
+        "sculpted — weight −15%",
+        "обработан — масса −15%",
+    ),
+    # shape: decompress
+    "decompress": (
+        lambda b: _scale_weight(b, 0.7),
+        "sculpted — weight −30%",
+        "обработан — масса −30%",
+    ),
+    # data: format
+    "format": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # data: reformat
+    "reformat": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # data: initialize
+    "initialize": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # data: configure
+    "configure": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # data: deconfigure
+    "deconfigure": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # data: upgrade
+    "upgrade": (
+        lambda b: _scale_price(b, 1.2),
+        "finished — price +20%",
+        "обработан — цена +20%",
+    ),
+    # data: downgrade
+    "downgrade": (
+        lambda b: _scale_price(b, 0.85),
+        "worn — price −15%",
+        "изношен — цена −15%",
+    ),
+    # thermal: firm-up
+    "firm-up": (
+        lambda b: None,
+        "data — no change",
+        "данные — без изменений",
+    ),
+    # data: update
+    "update": (
+        lambda b: _scale_price(b, 1.15),
+        "finished — price +15%",
+        "обработан — цена +15%",
+    ),
+    # data: patch
+    "patch": (
+        lambda b: _scale_price(b, 1.1),
+        "finished — price +10%",
+        "обработан — цена +10%",
+    ),
+    # maintain: repair
+    "repair": (
+        lambda b: _scale_price(b, 1.15),
+        "finished — price +15%",
+        "обработан — цена +15%",
+    ),
+    # maintain: service
+    "service": (
+        lambda b: _scale_price(b, 1.2),
+        "finished — price +20%",
+        "обработан — цена +20%",
+    ),
+    # maintain: maintain
+    "maintain": (
+        lambda b: _scale_price(b, 1.05),
+        "finished — price +5%",
+        "обработан — цена +5%",
+    ),
+    "lubricate": (
+        lambda b: _scale_oil(b, 1.5),
+        "lubricated — oil +50%",
+        "смазан — масло +50%",
+    ),
     "oil": (
         lambda b: _scale_oil(b, 1.5),
         "oiled — oil +50%",
@@ -2449,10 +2854,90 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "greased — oil +50%",
         "смазан — масло +50%",
     ),
-    "lubricate": (
-        lambda b: _scale_oil(b, 1.5),
-        "lubricated — oil +50%",
-        "смазан — масло +50%",
+    "clean": (
+        lambda b: _scale_price(b, 1.05),
+        "cleaned — price +5%",
+        "очищен — цена +5%",
+    ),
+    # maintain: wash
+    "wash": (
+        lambda b: _scale_price(b, 1.05),
+        "finished — price +5%",
+        "обработан — цена +5%",
+    ),
+    "decontaminate": (
+        lambda b: _scale_price(b, 1.1),
+        "decontaminated — price +10%",
+        "дезактивирован — цена +10%",
+    ),
+    "sterilize": (
+        lambda b: _scale_price(b, 1.1),
+        "sterilized — price +10%",
+        "стерилизован — цена +10%",
+    ),
+    # scan: inspect
+    "inspect": (
+        lambda b: None,
+        "measured — no change",
+        "измерен — без изменений",
+    ),
+    # scan: test
+    "test": (
+        lambda b: None,
+        "measured — no change",
+        "измерен — без изменений",
+    ),
+    # scan: retest
+    "retest": (
+        lambda b: None,
+        "measured — no change",
+        "измерен — без изменений",
+    ),
+    # scan: monitor
+    "monitor": (
+        lambda b: None,
+        "measured — no change",
+        "измерен — без изменений",
+    ),
+    # scan: measure
+    "measure": (
+        lambda b: None,
+        "measured — no change",
+        "измерен — без изменений",
+    ),
+    # scan: weigh
+    "weigh": (
+        lambda b: None,
+        "measured — no change",
+        "измерен — без изменений",
+    ),
+    # scan: meter
+    "meter": (
+        lambda b: None,
+        "measured — no change",
+        "измерен — без изменений",
+    ),
+    # pulse: pressurize
+    "pressurize": (
+        lambda b: _scale_oil(b, 1.3),
+        "filled — oil +30%",
+        "заполнен — масло +30%",
+    ),
+    # pulse: depressurize
+    "depressurize": (
+        lambda b: _scale_oil(b, 1.3),
+        "filled — oil +30%",
+        "заполнен — масло +30%",
+    ),
+    "vent": (
+        lambda b: _scale_weight(b, 0.95),
+        "vented — weight −5%",
+        "стравил давление — масса −5%",
+    ),
+    "purge": (
+        lambda b: _scale_weight(b, 0.9),
+        "purged — weight −10%",
+        "продувка — масса −10%",
     ),
     "fill": (
         lambda b: _scale_oil(b, 1.3),
@@ -2464,45 +2949,482 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "refilled — oil +30%",
         "дозаполнен — масло +30%",
     ),
-    # protection
+    "drain": (
+        lambda b: _scale_weight(b, 0.9),
+        "drained — weight −10%",
+        "осушен — масса −10%",
+    ),
+    "empty": (
+        lambda b: _scale_weight(b, 0.85),
+        "emptied — weight −15%",
+        "опорожнён — масса −15%",
+    ),
+    # thermal: cool
+    "cool": (
+        lambda b: _scale_price(b, 0.95),
+        "cooled — price −5%",
+        "охлаждён — цена −5%",
+    ),
+    # thermal: heat
+    "heat": (
+        lambda b: _scale_price(b, 1.1),
+        "heated — price +10%",
+        "нагрет — цена +10%",
+    ),
+    # thermal: freeze
+    "freeze": (
+        lambda b: _scale_weight(b, 0.95),
+        "freezeed — weight −5%",
+        "массa −5%",
+    ),
+    # thermal: thaw
+    "thaw": (
+        lambda b: _scale_weight(b, 0.95),
+        "thawed — weight −5%",
+        "массa −5%",
+    ),
+    # thermal: melt
+    "melt": (
+        lambda b: _scale_weight(b, 0.95),
+        "melted — weight −5%",
+        "массa −5%",
+    ),
+    "anneal": (
+        lambda b: _scale_price(b, 1.05),
+        "annealed — price +5%",
+        "отожжён — цена +5%",
+    ),
+    "temper": (
+        lambda b: _scale_price(b, 1.1),
+        "tempered — price +10%",
+        "отпущен — цена +10%",
+    ),
+    # thermal: quench
+    "quench": (
+        lambda b: _scale_weight(b, 0.95),
+        "quenched — weight −5%",
+        "массa −5%",
+    ),
+    "harden": (
+        lambda b: _scale_price(b, 1.15),
+        "hardened — price +15%",
+        "закалён — цена +15%",
+    ),
+    # thermal: soften
+    "soften": (
+        lambda b: _scale_price(b, 0.85),
+        "worn — price −15%",
+        "изношен — цена −15%",
+    ),
+    # thermal: harden-shell
+    "harden-shell": (
+        lambda b: _scale_price(b, 1.05),
+        "finished — price +5%",
+        "обработан — цена +5%",
+    ),
+    "sharpen": (
+        lambda b: _scale_price(b, 1.1),
+        "sharpened — price +10%",
+        "заточен — цена +10%",
+    ),
+    # finish: blunt
+    "blunt": (
+        lambda b: _scale_price(b, 0.95),
+        "worn — price −5%",
+        "изношен — цена −5%",
+    ),
+    # shape: magnify
+    "magnify": (
+        lambda b: _scale_weight(b, 1.1),
+        "stretched — weight +10%",
+        "растянут — масса +10%",
+    ),
+    # shape: minify
+    "minify": (
+        lambda b: _scale_weight(b, 0.75),
+        "sculpted — weight −25%",
+        "обработан — масса −25%",
+    ),
+    # optics: focus
+    "focus": (
+        lambda b: _scale_price(b, 1.1),
+        "adjusted — price +10%",
+        "скорректирован — цена +10%",
+    ),
+    # optics: defocus
+    "defocus": (
+        lambda b: _scale_price(b, 1.1),
+        "adjusted — price +10%",
+        "скорректирован — цена +10%",
+    ),
+    # optics: polarize
+    "polarize": (
+        lambda b: _scale_price(b, 1.1),
+        "adjusted — price +10%",
+        "скорректирован — цена +10%",
+    ),
+    # optics: depolarize
+    "depolarize": (
+        lambda b: _scale_price(b, 1.1),
+        "adjusted — price +10%",
+        "скорректирован — цена +10%",
+    ),
+    "magnetize": (
+        lambda b: _scale_price(b, 1.1),
+        "magnetized — price +10%",
+        "намагничен — цена +10%",
+    ),
+    "demagnetize": (
+        lambda b: _scale_weight(b, 0.95),
+        "demagnetized — easier to move — weight −5%",
+        "размагничен — проще перемещать — масса −5%",
+    ),
     "shield": (
         lambda b: (setattr(b, "is_proof", True), _scale_price(b, 1.1)),
         "shielded — proof",
         "экранирован — защита",
     ),
-    "seal": (
-        lambda b: (setattr(b, "water_resistant", True), _scale_price(b, 1.1)),
-        "sealed — water resistant",
-        "герметизирован — водонепроницаем",
+    # protect: unshield
+    "unshield": (
+        lambda b: setattr(b, "is_proof", False),
+        "unprotected — no shield",
+        "незащищён — без щита",
+    ),
+    # protect: desshield
+    "desshield": (
+        lambda b: setattr(b, "is_proof", False),
+        "unprotected — no shield",
+        "незащищён — без щита",
     ),
     "insulate": (
         lambda b: (setattr(b, "is_anti_emc", True), _scale_price(b, 1.1)),
         "insulated — anti-EMC",
         "изолирован — защита от ЭМИ",
     ),
-    # quantity
-    "split": (
-        lambda b: setattr(b, "quantity", b.quantity * 2),
-        "split — quantity ×2",
-        "раздвоен — количество ×2",
+    # protect: kinsulate
+    "kinsulate": (
+        lambda b: None,
+        "kinsulate — no change",
+        "kinsulate — без изменений",
     ),
-    "merge": (
-        lambda b: setattr(b, "quantity", b.quantity + 1),
-        "merged — quantity +1",
-        "слит — количество +1",
+    # protect: aminsulate
+    "aminsulate": (
+        lambda b: None,
+        "aminsulate — no change",
+        "aminsulate — без изменений",
+    ),
+    # protect: expose
+    "expose": (
+        lambda b: setattr(b, "is_proof", False),
+        "unprotected — no shield",
+        "незащищён — без щита",
+    ),
+    # protect: arm
+    "arm": (
+        lambda b: _scale_price(b, 1.2),
+        "finished — price +20%",
+        "обработан — цена +20%",
+    ),
+    # protect: dearm
+    "dearm": (
+        lambda b: setattr(b, "is_proof", False),
+        "unprotected — no shield",
+        "незащищён — без щита",
+    ),
+    # protect: disarm
+    "disarm": (
+        lambda b: setattr(b, "is_proof", False),
+        "unprotected — no shield",
+        "незащищён — без щита",
+    ),
+    # protect: prime
+    "prime": (
+        lambda b: _scale_price(b, 1.1),
+        "finished — price +10%",
+        "обработан — цена +10%",
+    ),
+    # protect: insland
+    "insland": (
+        lambda b: setattr(b, "is_proof", False),
+        "unprotected — no shield",
+        "незащищён — без щита",
+    ),
+    # protect: outland
+    "outland": (
+        lambda b: setattr(b, "is_proof", False),
+        "unprotected — no shield",
+        "незащищён — без щита",
+    ),
+    # state: deselect
+    "deselect": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: select
+    "select": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # power: activate
+    "activate": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # power: hrebate
+    "hrebate": (
+        lambda b: None,
+        "prepared — no change",
+        "подготовлен — без изменений",
+    ),
+    # power: deactivate
+    "deactivate": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # power: enable
+    "enable": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # power: disable
+    "disable": (
+        lambda b: None,
+        "powered — no change",
+        "подключён — без изменений",
+    ),
+    # separate: isolate
+    "isolate": (
+        lambda b: None,
+        "isolate — no change",
+        "isolate — без изменений",
+    ),
+    # operate: integrate
+    "integrate": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # separate: disintegrate
+    "disintegrate": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # join: amalgamate
+    "amalgamate": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # separate: segregate
+    "segregate": (
+        lambda b: _scale_price(b, 1.05),
+        "processed — price +5%",
+        "обработан — цена +5%",
+    ),
+    # state: sort
+    "sort": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: index
+    "index": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: categorize
+    "categorize": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: label
+    "label": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: relabel
+    "relabel": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: tag
+    "tag": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: untag
+    "untag": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: mark
+    "mark": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: dimark
+    "dimark": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: unmark
+    "unmark": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: brand
+    "brand": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # scan: serialize
+    "serialize": (
+        lambda b: None,
+        "measured — no change",
+        "измерен — без изменений",
+    ),
+    # state: register
+    "register": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # state: deregister
+    "deregister": (
+        lambda b: None,
+        "marked — no change",
+        "помечен — без изменений",
+    ),
+    # manage: assign
+    "assign": (
+        lambda b: None,
+        "assign — no change",
+        "assign — без изменений",
+    ),
+    # manage: transfer
+    "transfer": (
+        lambda b: None,
+        "transfer — no change",
+        "transfer — без изменений",
+    ),
+    # manage: deliver
+    "deliver": (
+        lambda b: None,
+        "deliver — no change",
+        "deliver — без изменений",
+    ),
+    # manage: retrieve
+    "retrieve": (
+        lambda b: None,
+        "retrieve — no change",
+        "retrieve — без изменений",
+    ),
+    # data: dispatch
+    "dispatch": (
+        lambda b: None,
+        "dispatch — no change",
+        "dispatch — без изменений",
+    ),
+    # manage: receive
+    "receive": (
+        lambda b: None,
+        "receive — no change",
+        "receive — без изменений",
     ),
     "stack": (
         lambda b: setattr(b, "quantity", b.quantity + 1),
         "stacked — quantity +1",
         "сложен в стопку — количество +1",
     ),
+    # manage: unstack
+    "unstack": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # manage: nest
+    "nest": (
+        lambda b: None,
+        "nest — no change",
+        "nest — без изменений",
+    ),
+    # manage: unnest
+    "unnest": (
+        lambda b: None,
+        "unnest — no change",
+        "unnest — без изменений",
+    ),
+    # shape: fold-in
+    "fold-in": (
+        lambda b: _scale_weight(b, 0.8),
+        "sculpted — weight −20%",
+        "обработан — масса −20%",
+    ),
+    # shape: expand-out
+    "expand-out": (
+        lambda b: _scale_weight(b, 1.1),
+        "stretched — weight +10%",
+        "растянут — масса +10%",
+    ),
+    # manage: package
+    "package": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # manage: unpackage
+    "unpackage": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # manage: crate
+    "crate": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # manage: uncrate
+    "uncrate": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # manage: palletize
+    "palletize": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
+    # manage: unpalletize
+    "unpalletize": (
+        lambda b: setattr(b, "quantity", b.quantity + 1),
+        "counted — quantity +1",
+        "подсчитан — количество +1",
+    ),
 }
 
 
 def apply_ability_effects(baby: ItemDB, abilities) -> list[dict]:
-    """Fire every ability's real-world effect on the unit.
+    """Compute ability effects without mutating the unit.
 
-    Returns an ordered log of {name, en, ru} effects that were applied.
+    Returns an ordered log of {name, en, ru} effects that would be applied.
     Deterministic given the ability set, so it can be recomputed on render.
     """
     log: list[dict] = []
@@ -2510,8 +3432,7 @@ def apply_ability_effects(baby: ItemDB, abilities) -> list[dict]:
         effect = ABILITY_EFFECTS.get(ab.name)
         if effect is None:
             continue
-        fn, en, ru = effect
-        fn(baby)
+        _, en, ru = effect
         log.append({"name": ab.name, "en": en, "ru": ru})
     return log
 
@@ -2581,7 +3502,6 @@ async def ui_warehouse_mutate(
         seen.update(ab.id for ab in u.abilities)
     merged = [db.get(AbilityDB, aid) for aid in seen if db.get(AbilityDB, aid)]
     baby.abilities = merged
-    apply_ability_effects(baby, merged)
     _clamp_price(baby)
     _clamp_weight(baby)
     _clamp_oil(baby)
@@ -2617,7 +3537,7 @@ def ui_combat_duel(request: Request):
 
 
 # --------------------------------------------------------------------------- #
-# War factory automation (loop: build → join → props → test → combat).
+# War factory automation (loop: build → join → props → test).
 # --------------------------------------------------------------------------- #
 
 # war_factory is imported lazily to avoid a module-load circular import
@@ -2638,16 +3558,6 @@ def war_factory_state(request: Request, db: Session = Depends(get_db)) -> dict:
     snapshot["auto"] = _wf().war_factory_daemon.status()
     profile_step(request, "query")
     return snapshot
-
-
-@app.get("/war/factory/leaderboard")
-def war_factory_leaderboard(
-    request: Request,
-    limit: int = Query(default=20, ge=1, le=200),
-    db: Session = Depends(get_db),
-) -> list[dict]:
-    profile_step(request, "query")
-    return _wf().leaderboard(db, limit=limit)
 
 
 @app.post("/war/factory/tick")
@@ -2712,7 +3622,6 @@ def war_factory_run(
             "mutated_props": sum(r.mutated_props for r in results),
             "tested": sum(r.tested["sample"] for r in results),
             "broken": sum(r.tested["broken"] for r in results),
-            "battles": sum(len(r.battles) for r in results),
         },
     }
 

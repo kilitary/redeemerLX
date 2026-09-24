@@ -14,7 +14,7 @@ content %} {% block breadcrumbs %}<a
             <span class="muted" id="wf-gen">—</span>
         </h1>
         <div class="muted">
-            Automated loop: build → join → props → test → combat.
+            Automated loop: build → join → props → test.
         </div>
         <div class="wf-stage">
             <span class="chip chip-build">🛠 Build</span>
@@ -24,17 +24,12 @@ content %} {% block breadcrumbs %}<a
             <span class="chip chip-props">🎨 Props</span>
             <span>→</span>
             <span class="chip chip-test">🔬 Test</span>
-            <span>→</span>
-            <span class="chip chip-combat">⚔️ Combat</span>
         </div>
     </div>
     <div class="actions">
         <a class="btn btn-tonal" href="{{ url_for('ui_index') }}">← Back</a>
         <a class="btn btn-tonal" href="{{ url_for('ui_test_facility') }}"
             >🔬 Test facility</a
-        >
-        <a class="btn btn-tonal" href="{{ url_for('ui_combat_duel') }}"
-            >⚔️ Combat duel</a
         >
     </div>
 </div>
@@ -99,11 +94,11 @@ content %} {% block breadcrumbs %}<a
 
 <div class="card">
     <h2>Automated loop</h2>
-    <p class="muted">
-        Start a background worker that runs the full loop (build → join → props
-        → test → combat) on an interval, forever. Building pauses once the
-        population cap is reached so the warehouse stays bounded.
-    </p>
+        <p class="muted">
+            Start a background worker that runs the full loop (build → join → props
+            → test) on an interval, forever. Building pauses once the
+            population cap is reached so the warehouse stays bounded.
+        </p>
     <form id="wf-auto-form" class="filters" onsubmit="return false;">
         <label
             >Interval (s)
@@ -157,32 +152,9 @@ content %} {% block breadcrumbs %}<a
             <input type="checkbox" id="wf-json-mode" />
             JSON output
         </label>
-        <span class="muted">– uncheck for the compact colorful battle log.</span>
+        <span class="muted">JSON output.</span>
     </p>
     <pre id="wf-last" class="muted">Run the loop to see results.</pre>
-</div>
-
-<div class="card">
-    <h2>🏆 Leaderboard</h2>
-    <table id="wf-leaderboard">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Wins</th>
-                <th>Fitness</th>
-                <th>ATK</th>
-                <th>DEF</th>
-                <th>SPD</th>
-                <th>HP</th>
-            </tr>
-        </thead>
-        <tbody id="wf-leaderboard-body">
-            <tr>
-                <td colspan="8" class="empty">No winners yet.</td>
-            </tr>
-        </tbody>
-    </table>
 </div>
 {% endblock %}
 {% block scripts %}
