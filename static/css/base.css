@@ -80,6 +80,17 @@ body::after {
     z-index: 3;
     pointer-events: none;
 }
+/* global tactical grid background (from the Test Facility page) */
+.grid-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(1200px 600px at 50% -10%, rgba(126, 242, 154, 0.06), transparent 60%),
+        repeating-linear-gradient(0deg, rgba(126, 242, 154, 0.04) 0 1px, transparent 1px 44px),
+        repeating-linear-gradient(90deg, rgba(126, 242, 154, 0.04) 0 1px, transparent 1px 44px);
+}
 #reveal {
     position: fixed;
     inset: 0;
@@ -340,8 +351,27 @@ svg.laser line.laser-core {
     }
 }
 @media (prefers-reduced-motion: reduce) {
+    /* Keep lightning visible under reduced motion (e.g. Firefox routinely
+       applies reduce), but soften the strobing into a single smooth pulse. */
     #lightning {
-        display: none;
+        display: block;
+    }
+    #lightning .bolt {
+        animation: bolt-flicker-soft 560ms ease-out forwards;
+    }
+}
+@keyframes bolt-flicker-soft {
+    0% {
+        opacity: 0;
+    }
+    15% {
+        opacity: 1;
+    }
+    70% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
     }
 }
 

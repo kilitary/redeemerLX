@@ -3,3 +3,8 @@ tools:
         allow:
             - find *
             - head *
+            - wc *
+            - xxd
+            - ls *
+            - file *
+            - "true"

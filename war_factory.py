@@ -23,18 +23,16 @@ import logging
 import random
 import threading
 import time
-from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, selectinload
 
 from main import (
     ABILITY_EFFECTS,
     AbilityDB,
-    AbilityParamDB,
     ItemDB,
     ItemParameterDB,
     ParameterDB,
@@ -42,10 +40,7 @@ from main import (
     mutate_name,
 )
 from parts import (
-    BRANDS,
     COLORS,
-    MODELS,
-    PART_KINDS,
     SIZES,
     SUB_NAMES,
 )
@@ -67,25 +62,21 @@ CREATE TABLE IF NOT EXISTS war_log (
 """
 
 
-def _ensure_war_log(db: Session) -> None:
-    from sqlalchemy import text
-
+def ensure_war_log(db: Session) -> None:
     db.execute(text(WAR_LOG_TABLE_DDL))
     db.commit()
 
 
-def _now() -> datetime:
+def now() -> datetime:
     return datetime.now(UTC)
 
 
 _MAX_UNIT_HP = 100.0
 
 
-def _log(db: Session, generation: int, stage: str, detail: dict[str, Any]) -> None:
+def log(db: Session, generation: int, stage: str, detail: dict[str, Any]) -> None:
     """Append a JSON line to war_log; never raises so it can't kill a tick."""
     try:
-        from sqlalchemy import text
-
         db.execute(
             text(
                 "INSERT INTO war_log (generation, stage, detail, created_at) "
@@ -95,7 +86,7 @@ def _log(db: Session, generation: int, stage: str, detail: dict[str, Any]) -> No
                 "g": generation,
                 "s": stage,
                 "d": json.dumps(detail, default=str),
-                "t": _now().isoformat(),
+                "t": now().isoformat(),
             },
         )
         db.commit()
@@ -109,19 +100,19 @@ def _log(db: Session, generation: int, stage: str, detail: dict[str, Any]) -> No
 # --------------------------------------------------------------------- #
 
 
-def _random_price() -> float:
+def random_price() -> float:
     return round(random.uniform(0.5, 999.99), 2)
 
 
-def _random_weight() -> float:
+def random_weight() -> float:
     return round(random.uniform(0, 15), 2)
 
 
-def _random_oil() -> float:
+def random_oil() -> float:
     return round(random.uniform(0, 15), 2)
 
 
-def _random_bool(p: float = 0.5) -> bool:
+def random_bool(p: float = 0.5) -> bool:
     return random.random() < p
 
 
@@ -185,7 +176,7 @@ _WORDS = [
 ]
 
 
-def _build_part_name() -> str:
+def build_part_name() -> str:
     g = random.choice(_GREEK)
     w1 = random.choice(_WORDS)
     w2 = random.choice(_WORDS)
@@ -241,27 +232,27 @@ def build_units(db: Session, count: int) -> list[ItemDB]:
     """
     abilities = db.scalars(select(AbilityDB)).all()
     created: list[ItemDB] = []
-    now = _now()
+    ts = now()
     for _ in range(count):
         item = ItemDB(
-            name=_build_part_name(),
-            price=_random_price(),
+            name=build_part_name(),
+            price=random_price(),
             quantity=random.randint(1, 20),
-            is_offer=_random_bool(0.3),
+            is_offer=random_bool(0.3),
             color=random.choice(COLORS),
             size=random.choice(SIZES),
-            weight=_random_weight(),
+            weight=random_weight(),
             hp=round(random.uniform(10, 100), 1),
-            is_anti_emc=_random_bool(0.4),
-            is_proof=_random_bool(0.4),
-            water_resistant=_random_bool(0.4),
-            oil=_random_oil(),
-            self_desentry=_random_bool(0.3),
-            is_parasite=_random_bool(0.3),
-            parasite_chance=random.randint(0, 90) if _random_bool(0.3) else 0,
+            is_anti_emc=random_bool(0.4),
+            is_proof=random_bool(0.4),
+            water_resistant=random_bool(0.4),
+            oil=random_oil(),
+            self_desentry=random_bool(0.3),
+            is_parasite=random_bool(0.3),
+            parasite_chance=random.randint(0, 90) if random_bool(0.3) else 0,
             revision=random.randint(1, 5),
-            added_at=now,
-            updated_at=now,
+            added_at=ts,
+            updated_at=ts,
             subitems=[
                 ItemDB(
                     name=random.choice(SUB_NAMES),
@@ -292,11 +283,11 @@ def build_units(db: Session, count: int) -> list[ItemDB]:
 # --------------------------------------------------------------------- #
 
 
-def _clamp_01(value: float, lo: float = 0.0, hi: float = 1e9) -> float:
+def clamp_01(value: float, lo: float = 0.0, hi: float = 1e9) -> float:
     return max(lo, min(hi, value))
 
 
-def _clamp_pct(value: int) -> int:
+def clamp_pct(value: int) -> int:
     return max(0, min(90, int(value)))
 
 
@@ -318,10 +309,10 @@ def join_units(db: Session, parents: list[ItemDB]) -> ItemDB:
         oil=round(sum(p.oil for p in parents), 2),
         self_desentry=any(p.self_desentry for p in parents),
         is_parasite=any(p.is_parasite for p in parents),
-        parasite_chance=_clamp_pct(sum(p.parasite_chance for p in parents)),
+        parasite_chance=clamp_pct(sum(p.parasite_chance for p in parents)),
         revision=max(1, sum(getattr(p, "revision", 1) or 1 for p in parents)),
-        added_at=_now(),
-        updated_at=_now(),
+        added_at=now(),
+        updated_at=now(),
     )
     seen: set[int] = set()
     for p in parents:
@@ -333,11 +324,11 @@ def join_units(db: Session, parents: list[ItemDB]) -> ItemDB:
     if len(merged) > 2:
         merged = merged[:2]
     baby.abilities = merged
-    baby.price = round(_clamp_01(baby.price, 0.01), 2)
-    baby.weight = round(_clamp_01(baby.weight, 0.0), 2)
-    baby.oil = round(_clamp_01(baby.oil, 0.0), 2)
+    baby.price = round(clamp_01(baby.price, 0.01), 2)
+    baby.weight = round(clamp_01(baby.weight, 0.0), 2)
+    baby.oil = round(clamp_01(baby.oil, 0.0), 2)
     baby.quantity = max(1, int(baby.quantity))
-    baby.parasite_chance = _clamp_pct(baby.parasite_chance)
+    baby.parasite_chance = clamp_pct(baby.parasite_chance)
     db.add(baby)
     db.flush()
     ensure_combat_readiness(db, baby)
@@ -470,7 +461,7 @@ def mutate_unit_props(unit: ItemDB, strength: float = 0.4) -> dict[str, Any]:
             touched["size"] = {"old": unit.size, "new": new_size}
             unit.size = new_size
 
-    unit.updated_at = _now()
+    unit.updated_at = now()
     return touched
 
 
@@ -525,7 +516,7 @@ class TestReport:
         }
 
 
-def _ability_has_effect(name: str) -> bool:
+def ability_has_effect(name: str) -> bool:
     """True if the ability is wired up to a real ABILITY_EFFECTS entry."""
     return name in ABILITY_EFFECTS
 
@@ -546,7 +537,7 @@ def test_unit(unit: ItemDB) -> TestReport:
         issues.append("parasite_chance out of [0, 90]")
 
     for ab in unit.abilities:
-        if not _ability_has_effect(ab.name):
+        if not ability_has_effect(ab.name):
             issues.append(f"ability {ab.name!r} has no wired effect")
 
     for sub in unit.subitems:
@@ -565,7 +556,7 @@ def test_unit(unit: ItemDB) -> TestReport:
             issues.append(f"subitem {sub.name!r} parasite_chance out of [0, 90]")
             sub_ok = False
         for ab in sub.abilities:
-            if not _ability_has_effect(ab.name):
+            if not ability_has_effect(ab.name):
                 issues.append(f"subitem {sub.name!r} ability {ab.name!r} has no effect")
                 sub_ok = False
         if sub_ok:
@@ -607,6 +598,10 @@ def test_population(db: Session, sample: int | None = None) -> list[TestReport]:
 
 
 # --------------------------------------------------------------------- #
+# 6.  Tick orchestration — build -> join -> props -> test                #
+# --------------------------------------------------------------------- #
+
+
 @dataclass
 class TickResult:
     generation: int
@@ -625,9 +620,7 @@ class TickResult:
         }
 
 
-def _current_generation(db: Session) -> int:
-    from sqlalchemy import text
-
+def current_generation(db: Session) -> int:
     row = db.execute(text("SELECT COALESCE(MAX(generation), 0) FROM war_log")).first()
     return int(row[0]) if row and row[0] is not None else 0
 
@@ -644,15 +637,37 @@ def run_tick(
 ) -> TickResult:
     if seed is not None:
         random.seed(seed)
-    _ensure_war_log(db)
-    gen = -1
-    reports = []
-    joined = []
-    built = []
+    ensure_war_log(db)
+    gen = current_generation(db) + 1
+
+    # 1) Unit builder
+    built = build_units(db, build_count) if build_count > 0 else []
+    log(
+        db,
+        gen,
+        "build",
+        {"count": len(built), "units": [u.id for u in built]},
+    )
+
+    # 2) Unit joiner
+    joined = join_random_pairs(db, join_pairs) if join_pairs > 0 else []
+    log(
+        db,
+        gen,
+        "join",
+        {"count": len(joined), "units": [u.id for u in joined]},
+    )
+
+    # 3) Unit props mutator
+    reports = mutate_population_props(
+        db, fraction=props_fraction, strength=props_strength
+    )
+    log(db, gen, "mutate", {"units": len(reports)})
+
     # 4) Test facility
     test_reports = test_population(db, sample=test_sample)
     ok_count = sum(1 for r in test_reports if r.ok)
-    _log(
+    log(
         db,
         gen,
         "test",
@@ -717,15 +732,13 @@ def run_loop(
 
 
 # --------------------------------------------------------------------- #
-# 8.  Leaderboard / state                                                #
+# 7.  Leaderboard / state                                                #
 # --------------------------------------------------------------------- #
 
 
 def state(db: Session) -> dict[str, Any]:
-    _ensure_war_log(db)
-    from sqlalchemy import text
-
-    gen = _current_generation(db)
+    ensure_war_log(db)
+    gen = current_generation(db)
     last_row = db.execute(
         text("SELECT stage, detail, created_at FROM war_log ORDER BY id DESC LIMIT 1")
     ).first()
@@ -758,7 +771,7 @@ def state(db: Session) -> dict[str, Any]:
 
 
 # --------------------------------------------------------------------- #
-# 8b.  Background daemon — automate the loop                             #
+# 8.  Background daemon — automate the loop                              #
 # --------------------------------------------------------------------- #
 
 
@@ -835,12 +848,12 @@ class WarFactoryDaemon:
             self.params["test_sample"] = max(1, int(test_sample))
         self._stop.clear()
         self._thread = threading.Thread(
-            target=self._loop, name="war-factory", daemon=True
+            target=self.loop, name="war-factory", daemon=True
         )
         self._thread.start()
         with self._lock:
             self.running = True
-            self.started_at = _now().isoformat()
+            self.started_at = now().isoformat()
         logger.info("war-factory daemon started (interval=%.1fs)", self.interval)
         return True
 
@@ -865,7 +878,7 @@ class WarFactoryDaemon:
             return self.running
 
     # -- internals ----------------------------------------------------- #
-    def _top_population(self, db: Session) -> int:
+    def top_population(self, db: Session) -> int:
         return int(
             db.scalar(
                 select(func.count())
@@ -875,11 +888,11 @@ class WarFactoryDaemon:
             or 0
         )
 
-    def _loop(self) -> None:
+    def loop(self) -> None:
         while not self._stop.is_set():
             try:
                 with SessionLocal() as db:
-                    top = self._top_population(db)
+                    top = self.top_population(db)
                     capped = top >= self.max_population
                     build = 0 if capped else self.params["build_count"]
                     join = 0 if capped else self.params["join_pairs"]
@@ -946,7 +959,7 @@ war_factory_daemon = WarFactoryDaemon()
 # --------------------------------------------------------------------- #
 
 
-def _self_test() -> None:
+def self_test() -> None:
     """Run a tiny deterministic loop. Prints a single line summary."""
     out = run_loop(ticks=2, seed=42)
     print(
@@ -977,7 +990,7 @@ if __name__ == "__main__":  # pragma: no cover
     args = parser.parse_args()
 
     if args.mode == "selftest":
-        _self_test()
+        self_test()
     elif args.mode == "ticks":
         out = run_loop(ticks=args.ticks, seed=args.seed)
         print(

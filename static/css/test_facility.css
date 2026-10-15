@@ -23,17 +23,6 @@
     background: repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px);
 }
 
-.cc .grid-bg {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(1200px 600px at 50% -10%, rgba(126,242,154,.06), transparent 60%),
-        repeating-linear-gradient(0deg, rgba(126,242,154,.04) 0 1px, transparent 1px 44px),
-        repeating-linear-gradient(90deg, rgba(126,242,154,.04) 0 1px, transparent 1px 44px);
-}
-
 .cc > * {
     position: relative;
     z-index: 1;
