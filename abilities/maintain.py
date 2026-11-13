@@ -3,17 +3,11 @@
 MAINTAIN_ABILITIES = (
     ('calibrate', 'adjust the object to a standard', 'откалибровать объект по эталону'),
     ('recalibrate', 'adjust the object back to a standard', 'перекалибровать объект по эталону'),
-    ('tune', 'adjust the object for resonance', 'настроить объект на резонанс'),
     ('detune', 'move the object off resonance', 'сбить объект с резонанса'),
     ('repair', 'restore the object to working order', 'восстановить работоспособность объекта'),
-    ('service', 'perform maintenance on the object', 'провести обслуживание объекта'),
-    ('maintain', 'keep the object in working order', 'поддерживать объект в рабочем порядке'),
     ('lubricate', 'apply lubricant to the object', 'нанести смазку на объект'),
     ('oil', 'apply oil to the object', 'нанести масло на объект'),
     ('grease', 'apply grease to the object', 'нанести консистентную смазку на объект'),
-    ('clean', 'remove dirt from the object', 'удалить грязь с объекта'),
-    ('wash', 'clean the object with liquid', 'очистить объект жидкостью'),
-    ('decontaminate', 'remove contaminants from the object', 'удалить загрязнения с объекта'),
     ('sterilize', 'make the object free of organisms', 'освободить объект от микроорганизмов'),
 )
 

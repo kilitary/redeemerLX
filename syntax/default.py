@@ -171,19 +171,19 @@ class Lexer:
                 self.pos += 1
                 self.col += 1
             elif ch == "#":
-                self._skip_comment()
+                self.skip_comment()
             elif ch == '"':
-                self._read_string()
+                self.read_string()
             elif ch in "{}[]:,;->":
-                self._read_punct(ch)
+                self.read_punct(ch)
             elif ch.isdigit() or (
                 ch == "."
                 and self.pos + 1 < len(self.source)
                 and self.source[self.pos + 1].isdigit()
             ):
-                self._read_number()
+                self.read_number()
             elif ch.isalpha() or ch == "_":
-                self._read_ident()
+                self.read_ident()
             else:
                 raise SyntaxError(
                     f"Unexpected character '{ch}' at {self.line}:{self.col}"
@@ -192,12 +192,12 @@ class Lexer:
         self.tokens.append(Token(TT.EOF, "", self.line, self.col))
         return self.tokens
 
-    def _skip_comment(self) -> None:
+    def skip_comment(self) -> None:
         while self.pos < len(self.source) and self.source[self.pos] != "\n":
             self.pos += 1
             self.col += 1
 
-    def _read_string(self) -> None:
+    def read_string(self) -> None:
         start_col = self.col
         self.pos += 1  # skip opening quote
         self.col += 1
@@ -218,7 +218,7 @@ class Lexer:
         self.col += 1
         self.tokens.append(Token(TT.STRING, "".join(buf), self.line, start_col))
 
-    def _read_number(self) -> None:
+    def read_number(self) -> None:
         start_col = self.col
         start = self.pos
         has_dot = False
@@ -241,7 +241,7 @@ class Lexer:
             )
         )
 
-    def _read_ident(self) -> None:
+    def read_ident(self) -> None:
         start_col = self.col
         start = self.pos
         while self.pos < len(self.source) and (
@@ -253,7 +253,7 @@ class Lexer:
         tt = KEYWORDS.get(word, TT.IDENT)
         self.tokens.append(Token(tt, word, self.line, start_col))
 
-    def _read_punct(self, ch: str) -> None:
+    def read_punct(self, ch: str) -> None:
         tt_map = {
             "{": TT.LBRACE,
             "}": TT.RBRACE,
@@ -349,177 +349,177 @@ class Parser:
 
     def parse(self) -> Program:
         prog = Program()
-        while not self._at(TT.EOF):
-            if self._at(TT.NEWLINE):
-                self._advance()
+        while not self.at(TT.EOF):
+            if self.at(TT.NEWLINE):
+                self.advance()
                 continue
-            stmt = self._parse_statement()
+            stmt = self.parse_statement()
             if stmt is not None:
                 prog.statements.append(stmt)
         return prog
 
-    def _current(self) -> Token:
+    def current(self) -> Token:
         return self.tokens[self.pos]
 
-    def _at(self, tt: TT) -> bool:
-        return self._current().type == tt
+    def at(self, tt: TT) -> bool:
+        return self.current().type == tt
 
-    def _advance(self) -> Token:
+    def advance(self) -> Token:
         tok = self.tokens[self.pos]
         self.pos += 1
         return tok
 
-    def _expect(self, tt: TT) -> Token:
-        tok = self._current()
+    def expect(self, tt: TT) -> Token:
+        tok = self.current()
         if tok.type != tt:
             raise SyntaxError(
                 f"Expected {tt.name}, got {tok.type.name} ('{tok.value}') at {tok.line}:{tok.col}"
             )
-        return self._advance()
+        return self.advance()
 
-    def _skip_newlines(self) -> None:
-        while self._at(TT.NEWLINE):
-            self._advance()
+    def skip_newlines(self) -> None:
+        while self.at(TT.NEWLINE):
+            self.advance()
 
-    def _parse_statement(self) -> Any | None:
-        tok = self._current()
+    def parse_statement(self) -> Any | None:
+        tok = self.current()
         if tok.type == TT.ABILITY:
-            return self._parse_ability()
+            return self.parse_ability()
         elif tok.type == TT.PARAM:
-            return self._parse_param()
+            return self.parse_param()
         elif tok.type == TT.UNIT:
-            return self._parse_unit()
+            return self.parse_unit()
         elif tok.type == TT.ALTER:
-            return self._parse_alter()
+            return self.parse_alter()
         elif tok.type == TT.IMPORT:
-            return self._parse_import()
+            return self.parse_import()
         else:
             raise SyntaxError(
                 f"Unexpected token {tok.type.name} ('{tok.value}') at {tok.line}:{tok.col}"
             )
 
-    def _parse_ability(self) -> AbilityDecl:
-        self._advance()  # consume 'ability'
-        name_tok = self._expect(TT.IDENT)
-        self._expect(TT.LBRACE)
+    def parse_ability(self) -> AbilityDecl:
+        self.advance()  # consume 'ability'
+        name_tok = self.expect(TT.IDENT)
+        self.expect(TT.LBRACE)
         decl = AbilityDecl(name=str(name_tok.value))
-        self._skip_newlines()
-        while not self._at(TT.RBRACE) and not self._at(TT.EOF):
-            key_tok = self._advance()
-            self._expect(TT.COLON)
+        self.skip_newlines()
+        while not self.at(TT.RBRACE) and not self.at(TT.EOF):
+            key_tok = self.advance()
+            self.expect(TT.COLON)
             if key_tok.type == TT.CATEGORY:
-                decl.category = str(self._expect(TT.STRING).value)
+                decl.category = str(self.expect(TT.STRING).value)
             elif key_tok.type == TT.DESC:
-                decl.desc = str(self._expect(TT.STRING).value)
+                decl.desc = str(self.expect(TT.STRING).value)
             elif key_tok.type == TT.DESC_RU:
-                decl.desc_ru = str(self._expect(TT.STRING).value)
+                decl.desc_ru = str(self.expect(TT.STRING).value)
             elif key_tok.type == TT.PARAMS:
-                self._expect(TT.LBRACKET)
-                while not self._at(TT.RBRACKET):
-                    p = self._expect(TT.IDENT)
+                self.expect(TT.LBRACKET)
+                while not self.at(TT.RBRACKET):
+                    p = self.expect(TT.IDENT)
                     decl.params.append(str(p.value))
-                    if self._at(TT.COMMA):
-                        self._advance()
-                self._expect(TT.RBRACKET)
+                    if self.at(TT.COMMA):
+                        self.advance()
+                self.expect(TT.RBRACKET)
             else:
                 raise SyntaxError(
                     f"Unknown ability field '{key_tok.value}' at {key_tok.line}:{key_tok.col}"
                 )
-            self._expect(TT.SEMICOLON)
-            self._skip_newlines()
-        self._expect(TT.RBRACE)
+            self.expect(TT.SEMICOLON)
+            self.skip_newlines()
+        self.expect(TT.RBRACE)
         return decl
 
-    def _parse_param(self) -> ParamDecl:
-        self._advance()  # consume 'param'
-        name_tok = self._expect(TT.IDENT)
-        self._expect(TT.LBRACE)
+    def parse_param(self) -> ParamDecl:
+        self.advance()  # consume 'param'
+        name_tok = self.expect(TT.IDENT)
+        self.expect(TT.LBRACE)
         decl = ParamDecl(name=str(name_tok.value))
-        self._skip_newlines()
-        while not self._at(TT.RBRACE) and not self._at(TT.EOF):
-            key_tok = self._advance()
-            self._expect(TT.COLON)
-            if self._at(TT.STRING):
-                val = str(self._advance().value)
-            elif self._at(TT.NUMBER):
-                val = self._advance().value
-            elif self._at(TT.IDENT) or self._at(TT.UNIT):
-                val = str(self._advance().value)
-            elif self._at(TT.LBRACKET):
-                self._advance()
+        self.skip_newlines()
+        while not self.at(TT.RBRACE) and not self.at(TT.EOF):
+            key_tok = self.advance()
+            self.expect(TT.COLON)
+            if self.at(TT.STRING):
+                val = str(self.advance().value)
+            elif self.at(TT.NUMBER):
+                val = self.advance().value
+            elif self.at(TT.IDENT) or self.at(TT.UNIT):
+                val = str(self.advance().value)
+            elif self.at(TT.LBRACKET):
+                self.advance()
                 arr: list[float] = []
-                while not self._at(TT.RBRACKET):
-                    arr.append(float(self._advance().value))
-                    if self._at(TT.COMMA):
-                        self._advance()
-                self._expect(TT.RBRACKET)
+                while not self.at(TT.RBRACKET):
+                    arr.append(float(self.advance().value))
+                    if self.at(TT.COMMA):
+                        self.advance()
+                self.expect(TT.RBRACKET)
                 val = arr
             else:
                 raise SyntaxError(
-                    f"Unexpected value in param field at {self._current().line}:{self._current().col}"
+                    f"Unexpected value in param field at {self.current().line}:{self.current().col}"
                 )
             decl.fields.append(ParamField(key=str(key_tok.value), value=val))
-            self._expect(TT.SEMICOLON)
-            self._skip_newlines()
-        self._expect(TT.RBRACE)
+            self.expect(TT.SEMICOLON)
+            self.skip_newlines()
+        self.expect(TT.RBRACE)
         return decl
 
-    def _parse_unit(self) -> UnitDecl:
-        self._advance()  # consume 'unit'
-        name_tok = self._expect(TT.IDENT)
-        self._expect(TT.LBRACE)
+    def parse_unit(self) -> UnitDecl:
+        self.advance()  # consume 'unit'
+        name_tok = self.expect(TT.IDENT)
+        self.expect(TT.LBRACE)
         decl = UnitDecl(name=str(name_tok.value))
-        self._skip_newlines()
-        while not self._at(TT.RBRACE) and not self._at(TT.EOF):
-            key_tok = self._advance()
-            self._expect(TT.COLON)
+        self.skip_newlines()
+        while not self.at(TT.RBRACE) and not self.at(TT.EOF):
+            key_tok = self.advance()
+            self.expect(TT.COLON)
             if key_tok.type == TT.SYMBOL:
-                decl.symbol = str(self._expect(TT.STRING).value)
+                decl.symbol = str(self.expect(TT.STRING).value)
             elif key_tok.type == TT.BASE:
-                decl.base = str(self._expect(TT.IDENT).value)
+                decl.base = str(self.expect(TT.IDENT).value)
             elif key_tok.type == TT.FACTOR:
-                decl.factor = float(self._expect(TT.NUMBER).value)
+                decl.factor = float(self.expect(TT.NUMBER).value)
             elif key_tok.type == TT.OFFSET:
-                decl.offset = float(self._expect(TT.NUMBER).value)
+                decl.offset = float(self.expect(TT.NUMBER).value)
             else:
                 raise SyntaxError(
                     f"Unknown unit field '{key_tok.value}' at {key_tok.line}:{key_tok.col}"
                 )
-            self._expect(TT.SEMICOLON)
-            self._skip_newlines()
-        self._expect(TT.RBRACE)
+            self.expect(TT.SEMICOLON)
+            self.skip_newlines()
+        self.expect(TT.RBRACE)
         return decl
 
-    def _parse_alter(self) -> AlterStmt:
-        self._advance()  # consume 'alter'
-        src = str(self._expect(TT.IDENT).value)
-        self._expect(TT.ARROW)
-        tgt = str(self._expect(TT.IDENT).value)
-        self._expect(TT.LBRACE)
+    def parse_alter(self) -> AlterStmt:
+        self.advance()  # consume 'alter'
+        src = str(self.expect(TT.IDENT).value)
+        self.expect(TT.ARROW)
+        tgt = str(self.expect(TT.IDENT).value)
+        self.expect(TT.LBRACE)
         stmt = AlterStmt(source=src, target=tgt)
-        self._skip_newlines()
-        while not self._at(TT.RBRACE) and not self._at(TT.EOF):
-            key_tok = self._advance()
-            self._expect(TT.COLON)
-            if self._at(TT.STRING):
-                val = str(self._advance().value)
-            elif self._at(TT.NUMBER):
-                val = self._advance().value
-            elif self._at(TT.IDENT):
-                val = str(self._advance().value)
+        self.skip_newlines()
+        while not self.at(TT.RBRACE) and not self.at(TT.EOF):
+            key_tok = self.advance()
+            self.expect(TT.COLON)
+            if self.at(TT.STRING):
+                val = str(self.advance().value)
+            elif self.at(TT.NUMBER):
+                val = self.advance().value
+            elif self.at(TT.IDENT):
+                val = str(self.advance().value)
             else:
                 raise SyntaxError(
-                    f"Unexpected value in alter field at {self._current().line}:{self._current().col}"
+                    f"Unexpected value in alter field at {self.current().line}:{self.current().col}"
                 )
             stmt.fields.append(AlterField(key=str(key_tok.value), value=val))
-            self._expect(TT.SEMICOLON)
-            self._skip_newlines()
-        self._expect(TT.RBRACE)
+            self.expect(TT.SEMICOLON)
+            self.skip_newlines()
+        self.expect(TT.RBRACE)
         return stmt
 
-    def _parse_import(self) -> ImportStmt:
-        self._advance()  # consume 'import'
-        path = str(self._expect(TT.STRING).value)
+    def parse_import(self) -> ImportStmt:
+        self.advance()  # consume 'import'
+        path = str(self.expect(TT.STRING).value)
         return ImportStmt(path=path)
 
 
@@ -542,13 +542,13 @@ class Evaluator:
     def run(self, program: Program) -> dict[str, Any]:
         for stmt in program.statements:
             if isinstance(stmt, AbilityDecl):
-                self._register_ability(stmt)
+                self.register_ability(stmt)
             elif isinstance(stmt, ParamDecl):
-                self._register_param(stmt)
+                self.register_param(stmt)
             elif isinstance(stmt, UnitDecl):
-                self._register_unit(stmt)
+                self.register_unit(stmt)
             elif isinstance(stmt, AlterStmt):
-                self._apply_alter(stmt)
+                self.apply_alter(stmt)
             elif isinstance(stmt, ImportStmt):
                 pass  # imports resolved externally
         return {
@@ -557,30 +557,30 @@ class Evaluator:
             "units": self.units,
         }
 
-    def _register_ability(self, decl: AbilityDecl) -> None:
+    def register_ability(self, decl: AbilityDecl) -> None:
         self.abilities[decl.name] = decl
         self.definitions[decl.name] = decl
 
-    def _register_param(self, decl: ParamDecl) -> None:
+    def register_param(self, decl: ParamDecl) -> None:
         self.params[decl.name] = {f.key: f.value for f in decl.fields}
         self.definitions[decl.name] = decl
 
-    def _register_unit(self, decl: UnitDecl) -> None:
+    def register_unit(self, decl: UnitDecl) -> None:
         self.units[decl.name] = decl
         self.definitions[decl.name] = decl
 
-    def _apply_alter(self, stmt: AlterStmt) -> None:
+    def apply_alter(self, stmt: AlterStmt) -> None:
         target = self.params.get(stmt.source) or self.definitions.get(stmt.source)
         if target is None:
             raise KeyError(f"Unknown target '{stmt.source}' for alter")
 
         for field in stmt.fields:
             if isinstance(target, dict):
-                self._alter_dict(target, field)
+                self.alter_dict(target, field)
             elif isinstance(target, ParamDecl):
-                self._alter_param(target, field)
+                self.alter_param(target, field)
 
-    def _alter_dict(self, d: dict, field: AlterField) -> None:
+    def alter_dict(self, d: dict, field: AlterField) -> None:
         op = field.key
         if op == "set":
             d["value"] = field.value
@@ -597,7 +597,7 @@ class Evaluator:
         else:
             d[op] = field.value
 
-    def _alter_param(self, param: ParamDecl, field: AlterField) -> None:
+    def alter_param(self, param: ParamDecl, field: AlterField) -> None:
         for f in param.fields:
             if f.key == "default" and field.key in ("set", "add", "mul"):
                 if field.key == "set":

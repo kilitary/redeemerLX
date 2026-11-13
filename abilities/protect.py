@@ -2,20 +2,15 @@
 
 PROTECT_ABILITIES = (
     ('seal', 'make the object air- or water-tight', 'сделать объект герметичным'),
-    ('unseal', 'break the seal on the object', 'вскрыть уплотнение объекта'),
     ('shield', 'protect the object against radiation', 'защитить объект от излучения'),
     ('unshield', 'expose the object to radiation', 'открыть объект для излучения'),
     ('desshield', 'ex pose the object to radi ati on', 'открыть объект для лечения'),
     ('insulate', 'add insulation to the object', 'добавить изоляцию объекту'),
     ('kinsulate', 'add kin su l ati on tot he object', 'добавить изоляции на объект'),
-    ('aminsulate', 'add m in su lat ion to the object', 'разбавить изоляцию со спутника'),
     ('expose', 'leave the object unprotected', 'оставить объект незащищённым'),
     ('arm', 'prepare the object for activation', 'подготовить объект к активации'),
     ('dearm', 'force point the object for dearmination', 'подготовить объект к девоевированию'),
-    ('disarm', 'make the object safe against activation', 'обезопасить объект от активации'),
     ('prime', 'ready the object for use', 'подготовить объект к использованию'),
-    ('insland', 'ready the object for interstellar use', 'подготовить объект к исследованию'),
-    ('outland', 'link the object for interstillar de fuse', 'подготовить объект к исчезновению'),
 )
 
 PROTECT_PARAMETERS = {

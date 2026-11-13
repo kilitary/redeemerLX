@@ -5,10 +5,7 @@ SCAN_ABILITIES = (
     ('test', 'exercise the object to check it works', 'проверить объект на работоспособность'),
     ('retest', 'exercise the object again', 'проверить объект повторно'),
     ('monitor', "watch the object's state", 'наблюдать за состоянием объекта'),
-    ('measure', 'take measurements of the object', 'снять показания объекта'),
     ('weigh', "measure the object's mass", 'измерить массу объекта'),
-    ('meter', "measure the object's consumption", 'измерить потребление объекта'),
-    ('serialize', 'give the object a serial identity', 'присвоить объекту серийный номер'),
 )
 
 SCAN_PARAMETERS = {

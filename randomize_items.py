@@ -63,7 +63,7 @@ def random_delta(max_minutes: int) -> datetime.timedelta:
     return datetime.timedelta(minutes=random.randint(0, max_minutes))
 
 
-def _round(v: float | None) -> float | None:
+def round_value(v: float | None) -> float | None:
     return None if v is None else round(v, 4)
 
 
@@ -106,7 +106,7 @@ def random_bounds(
     lo = min(lo, base)
     hi = max(hi, base)
 
-    return _round(base), _round(lo), _round(hi)
+    return round_value(base), round_value(lo), round_value(hi)
 
 
 def main() -> None:

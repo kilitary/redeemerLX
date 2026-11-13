@@ -2,11 +2,9 @@
 
 MOVE_ABILITIES = (
     ('align', 'arrange the object along a shared axis', 'выровнять объект по общей оси'),
-    ('misalign', 'offset the object from its intended axis', 'сместить объект с заданной оси'),
     ('rotate', 'spin the object around an axis', 'вращать объект вокруг оси'),
     ('rotate-back', 'spin the object back to its original orientation', 'вернуть объект в исходную ориентацию'),
     ('translate', 'alters the object position', 'изменить позицию объекта в локальной геометрии'),
-    ('mirror', 'flip the object as if reflected', 'отразить объект как в зеркале'),
 )
 
 MOVE_PARAMETERS = {

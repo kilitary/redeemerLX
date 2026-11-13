@@ -2,25 +2,15 @@
 
 JOIN_ABILITIES = (
     ('connect', 'join the object to another object', 'соединить объект с другим объектом'),
-    ('deconnect', 'separate the object from another object', 'отсоединить объект от другого объекта'),
     ('merge', 'combine the object with another object', 'объединить объект с другим объектом'),
     ('weld', 'fuse the object with heat', 'сварить объект с помощью нагрева'),
-    ('braze', 'join the object using a filler metal', 'соединить объект с помощью присадочного металла'),
     ('solder', 'join the object using molten solder', 'соединить объект расплавленным припоем'),
     ('rivet', 'fasten the object with a rivet', 'скрепить объект заклёпкой'),
-    ('bolt', 'fasten the object with a bolt', 'скрепить объект болтом'),
-    ('screw', 'fasten the object with a screw', 'скрепить объект винтом'),
     ('glue', 'adhere the object with adhesive', 'приклеить объект клеем'),
     ('clip', 'attach the object with a clip', 'прикрепить объект зажимом'),
     ('pin', 'secure the object with a pin', 'закрепить объект штифтом'),
-    ('clamp', 'hold the object in a clamp', 'зажать объект в тисках'),
     ('fasten', 'attach the object firmly', 'прочно прикрепить объект'),
-    ('unfasten', 'release the object from its fastening', 'освободить объект от крепления'),
     ('mount', 'place the object onto a fixture', 'установить объект на крепёж'),
-    ('unmount', 'remove the object from its fixture', 'снять объект с крепления'),
-    ('install', 'put the object into its working position', 'установить объект в рабочее положение'),
-    ('uninstall', 'take the object out of service', 'снять объект с обслуживания'),
-    ('insert', 'put the object into a socket or cavity', 'вставить объект в гнездо или полость'),
     ('amalgamate', 'blend the object with another', 'смешать объект с другим'),
 )
 

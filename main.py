@@ -9,6 +9,7 @@ import time
 import zlib
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from logging.handlers import RotatingFileHandler
 from pathlib import Path as FilePath
 from re import Match
 from typing import override
@@ -19,7 +20,16 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Column, ForeignKey, Table, create_engine, event, or_, select, text
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Table,
+    create_engine,
+    event,
+    or_,
+    select,
+    text,
+)
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import (
@@ -63,14 +73,32 @@ class CompactFormatter(logging.Formatter):
         return f"{record.asctime} {record.levelname:<7} {msg}"
 
 
+# Log file, keep it near the app. Rolls over so it never eats the disk.
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "app.log"
+
+log_file_handler = RotatingFileHandler(
+    LOG_FILE, maxBytes=1_000_000, backupCount=5, encoding="utf-8"
+)
+log_file_handler.setFormatter(CompactFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
+
 logger = logging.getLogger("items_api")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(CompactFormatter(datefmt="%H:%M:%S"))
     logger.addHandler(handler)
+if log_file_handler not in logger.handlers:
+    logger.addHandler(log_file_handler)
 logger.propagate = False
 logger.debug("Debug mode enabled: %s", logger.hasHandlers())
+
+# Root catches fellow module loggers, war_factory and friends.
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+if log_file_handler not in root_logger.handlers:
+    root_logger.addHandler(log_file_handler)
 
 
 logger.info(f"Connecting to database {SQLALCHEMY_DATABASE_URL} ...")
@@ -149,7 +177,8 @@ class Version:
         return self.__str__()
 
 
-APP_VERSION = str(Version("1.37.4").bump())
+# Petre I says: the BBS joins the build, so the number is raised again
+APP_VERSION = str(Version("1.37.9").bump())
 logger.info(f"App version: {APP_VERSION}")
 templates.env.globals["app_version"] = APP_VERSION
 
@@ -166,12 +195,12 @@ _db_stack: dict[int, float] = {}
 
 
 @event.listens_for(Engine, "before_cursor_execute")
-def _before_exec(conn, cursor, statement, parameters, context, executemany):
+def before_exec(conn, cursor, statement, parameters, context, executemany):
     _db_stack[id(conn)] = time.perf_counter()
 
 
 @event.listens_for(Engine, "after_cursor_execute")
-def _after_exec(conn, cursor, statement, parameters, context, executemany):
+def after_exec(conn, cursor, statement, parameters, context, executemany):
     start = _db_stack.pop(id(conn), None)
     if start is not None:
         _db_start[id(conn)] = _db_start.get(id(conn), 0.0) + (
@@ -1218,7 +1247,7 @@ def ensure_db_writable() -> None:
         ) from exc
 
 
-def _item_exists(db: Session, name: str, parent_id: int | None = None) -> bool:
+def item_exists(db: Session, name: str, parent_id: int | None = None) -> bool:
     return (
         db.scalar(
             select(ItemDB.id)
@@ -1251,7 +1280,7 @@ def seed_static_items(db: Session) -> int:
     db.flush()
 
     for spec in STATIC_ITEMS:
-        if not _item_exists(db, spec.name):
+        if not item_exists(db, spec.name):
             db.add(
                 ItemDB(
                     name=spec.name,
@@ -1268,7 +1297,7 @@ def seed_static_items(db: Session) -> int:
                 )
             )
             for sub in spec.subitems:
-                if parent is not None and not _item_exists(db, sub, parent.id):
+                if parent is not None and not item_exists(db, sub, parent.id):
                     db.add(ItemDB(name=sub, parent_id=parent.id))
                     created += 1
 
@@ -1463,9 +1492,9 @@ async def lifespan(app: FastAPI):
     autostart = os.environ.get("WAR_FACTORY_AUTOSTART", "0").strip().lower()
     if autostart not in ("", "0", "false", "no", "off"):
         try:
-            from war_factory import war_factory_daemon as _wf_daemon
+            from war_factory import war_factory_daemon as wf_daemon
 
-            _wf_daemon.start()
+            wf_daemon.start()
             logger.info("War-factory auto-loop enabled (WAR_FACTORY_AUTOSTART).")
         except Exception:  # pragma: no cover - defensive
             logger.exception("war-factory autostart failed")
@@ -1474,9 +1503,9 @@ async def lifespan(app: FastAPI):
 
     # Stop the background loop cleanly on shutdown (never pkill).
     try:
-        from war_factory import war_factory_daemon as _wf_daemon
+        from war_factory import war_factory_daemon as wf_daemon
 
-        _wf_daemon.stop()
+        wf_daemon.stop()
     except Exception:  # pragma: no cover - defensive
         logger.exception("war-factory stop on shutdown failed")
 
@@ -1536,18 +1565,18 @@ def profile_step(request: Request, name: str) -> None:
     prof["last"] = now
 
 
-def _db_time_ms() -> float:
+def db_time_ms() -> float:
     return sum(_db_start.values()) * 1000
 
 
-def _reset_db_time() -> None:
+def reset_db_time() -> None:
     _db_start.clear()
 
 
 @app.middleware("http")
 async def profile_requests(request: Request, call_next):
     start = time.perf_counter()
-    _reset_db_time()
+    reset_db_time()
     request.state.profile = {"steps": [], "last": start}
     response = await call_next(request)
     total = (time.perf_counter() - start) * 1000
@@ -1559,7 +1588,7 @@ async def profile_requests(request: Request, call_next):
         "path": request.url.path,
         "steps": steps
         + [
-            ["db", round(_db_time_ms(), 2)],
+            ["db", round(db_time_ms(), 2)],
             ["middleware", middleware],
             ["total", round(total, 2)],
         ],
@@ -1713,7 +1742,7 @@ def handle_item_form_error(request: Request, exc: ItemFormError) -> RedirectResp
     return redirect_with_error(exc.url, "Invalid input")
 
 
-def _form_bool(value: str | None) -> bool:
+def form_bool(value: str | None) -> bool:
     return (value or "").strip().lower() in ("1", "true", "yes", "on", "checked")
 
 
@@ -1735,17 +1764,17 @@ def item_form_dep(endpoint: str):
                 name=g("name", ""),
                 price=float(g("price", "")) if g("price") else 0.0,
                 quantity=int(g("quantity")) if g("quantity") else 1,
-                is_offer=_form_bool(g("is_offer")),
+                is_offer=form_bool(g("is_offer")),
                 color=g("color", ""),
                 size=g("size", ""),
                 weight=float(g("weight")) if g("weight") else 0.0,
                 hp=float(g("hp")) if g("hp") else 100.0,
-                is_anti_emc=_form_bool(g("is_anti_emc")),
-                is_proof=_form_bool(g("is_proof")),
-                water_resistant=_form_bool(g("water_resistant")),
+                is_anti_emc=form_bool(g("is_anti_emc")),
+                is_proof=form_bool(g("is_proof")),
+                water_resistant=form_bool(g("water_resistant")),
                 oil=float(g("oil")) if g("oil") else 0.0,
-                self_desentry=_form_bool(g("self_desentry")),
-                is_parasite=_form_bool(g("is_parasite")),
+                self_desentry=form_bool(g("self_desentry")),
+                is_parasite=form_bool(g("is_parasite")),
                 parasite_chance=int(g("parasite_chance"))
                 if g("parasite_chance")
                 else 0,
@@ -1813,7 +1842,7 @@ SORT_COLUMNS = {
 SORT_PATTERN = "^(" + "|".join(SORT_COLUMNS.keys()) + ")$"
 
 
-def _parse_bool(value: str | None) -> bool | None:
+def parse_bool(value: str | None) -> bool | None:
     if value is None or value == "":
         return None
     if value.strip().lower() in ("1", "true", "yes", "on"):
@@ -1907,13 +1936,15 @@ def items_filter(
     return filt
 
 
-def _is_root_item():
+def is_root_item():
     """True for top-level units: parent_id is 0, empty, or NULL."""
-    return or_(ItemDB.parent_id.is_(None), ItemDB.parent_id == 0, ItemDB.parent_id == "")
+    return or_(
+        ItemDB.parent_id.is_(None), ItemDB.parent_id == 0, ItemDB.parent_id == ""
+    )
 
 
 def filtered_items_select(filt: ItemFilter) -> select:
-    stmt = select(ItemDB).where(_is_root_item())
+    stmt = select(ItemDB).where(is_root_item())
     if filt.q:
         stmt = stmt.where(ItemDB.name.ilike(f"%{filt.q}%"))
     if filt.min_price is not None:
@@ -1932,21 +1963,21 @@ def filtered_items_select(filt: ItemFilter) -> select:
         stmt = stmt.where(ItemDB.hp >= filt.hp_min)
     if filt.hp_max is not None:
         stmt = stmt.where(ItemDB.hp <= filt.hp_max)
-    if (offer := _parse_bool(filt.is_offer)) is not None:
+    if (offer := parse_bool(filt.is_offer)) is not None:
         stmt = stmt.where(ItemDB.is_offer == offer)
-    if (anti := _parse_bool(filt.is_anti_emc)) is not None:
+    if (anti := parse_bool(filt.is_anti_emc)) is not None:
         stmt = stmt.where(ItemDB.is_anti_emc == anti)
-    if (proof := _parse_bool(filt.is_proof)) is not None:
+    if (proof := parse_bool(filt.is_proof)) is not None:
         stmt = stmt.where(ItemDB.is_proof == proof)
-    if (water := _parse_bool(filt.water_resistant)) is not None:
+    if (water := parse_bool(filt.water_resistant)) is not None:
         stmt = stmt.where(ItemDB.water_resistant == water)
     if filt.oil_min is not None:
         stmt = stmt.where(ItemDB.oil >= filt.oil_min)
     if filt.oil_max is not None:
         stmt = stmt.where(ItemDB.oil <= filt.oil_max)
-    if (sd := _parse_bool(filt.self_desentry)) is not None:
+    if (sd := parse_bool(filt.self_desentry)) is not None:
         stmt = stmt.where(ItemDB.self_desentry == sd)
-    if (para := _parse_bool(filt.is_parasite)) is not None:
+    if (para := parse_bool(filt.is_parasite)) is not None:
         stmt = stmt.where(ItemDB.is_parasite == para)
     if filt.parasite_chance_min is not None:
         stmt = stmt.where(ItemDB.parasite_chance >= filt.parasite_chance_min)
@@ -2206,7 +2237,7 @@ def read_root() -> dict[str, str]:
 def ui_warehouse(request: Request, db: Session = Depends(get_db)):
     profile_step(request, "query")
     items = db.scalars(
-        select(ItemDB).where(_is_root_item()).order_by(ItemDB.name)
+        select(ItemDB).where(is_root_item()).order_by(ItemDB.name)
     ).all()
     mutated_id = request.query_params.get("mutated")
     mutated = None
@@ -2238,43 +2269,31 @@ def ui_warehouse(request: Request, db: Session = Depends(get_db)):
     )
 
 
-def _clamp_price(baby: ItemDB) -> None:
+def clamp_price(baby: ItemDB) -> None:
     baby.price = round(max(0.01, baby.price), 2)
 
 
-def _clamp_weight(baby: ItemDB) -> None:
+def clamp_weight(baby: ItemDB) -> None:
     baby.weight = round(max(0.0, baby.weight), 2)
 
 
-def _clamp_oil(baby: ItemDB) -> None:
+def clamp_oil(baby: ItemDB) -> None:
     baby.oil = round(max(0.0, baby.oil), 2)
 
 
-def _scale_price(baby: ItemDB, factor: float) -> None:
+def scale_price(baby: ItemDB, factor: float) -> None:
     baby.price = round(max(0.01, baby.price * factor), 2)
 
 
-def _scale_weight(baby: ItemDB, factor: float) -> None:
+def scale_weight(baby: ItemDB, factor: float) -> None:
     baby.weight = round(max(0.0, baby.weight * factor), 2)
 
 
-def _scale_oil(baby: ItemDB, factor: float) -> None:
+def scale_oil(baby: ItemDB, factor: float) -> None:
     baby.oil = round(max(0.0, baby.oil * factor), 2)
 
 
 ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
-    # operate: touch
-    "touch": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # manage: wrap
-    "wrap": (
-        lambda b: setattr(b, "quantity", b.quantity + 1),
-        "counted — quantity +1",
-        "подсчитан — количество +1",
-    ),
     # manage: unwrap
     "unwrap": (
         lambda b: setattr(b, "quantity", b.quantity + 1),
@@ -2283,32 +2302,15 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
     ),
     # move: align
     "align": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # move: misalign
-    "misalign": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # join: connect
     "connect": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
-    ),
-    # join: deconnect
-    "deconnect": (
-        lambda b: None,
-        "deconnect — no change",
-        "deconnect — без изменений",
-    ),
-    "split": (
-        lambda b: setattr(b, "quantity", b.quantity * 2),
-        "split — quantity ×2",
-        "раздвоен — количество ×2",
     ),
     "merge": (
         lambda b: setattr(b, "quantity", b.quantity + 1),
@@ -2317,347 +2319,148 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
     ),
     # move: rotate
     "rotate": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # move: rotate-back
     "rotate-back": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
-    ),
-    "scale": (
-        lambda b: _scale_weight(b, 1.15),
-        "scaled up — weight +15%",
-        "увеличен — масса +15%",
     ),
     # move: translate
     "translate": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # operate: invert
-    "invert": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # move: mirror
-    "mirror": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # shape: skew
     "skew": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # shape: distort
     "distort": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # shape: straighten
-    "straighten": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # shape: bend
     "bend": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # shape: fold
     "fold": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
-    ),
-    # shape: unfold
-    "unfold": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    "stretch": (
-        lambda b: _scale_weight(b, 1.2),
-        "stretched — weight +20%",
-        "растянут — масса +20%",
-    ),
-    "compress": (
-        lambda b: _scale_weight(b, 0.75),
-        "compressed — weight −25%",
-        "сжат — масса −25%",
     ),
     "expand": (
-        lambda b: _scale_weight(b, 1.3),
+        lambda b: scale_weight(b, 1.3),
         "expanded — weight +30%",
         "расширен — масса +30%",
     ),
     "flatten": (
-        lambda b: _scale_weight(b, 0.8),
+        lambda b: scale_weight(b, 0.8),
         "flattened — weight −20%",
         "расплющен — масса −20%",
     ),
     "extrude": (
-        lambda b: _scale_weight(b, 0.9),
+        lambda b: scale_weight(b, 0.9),
         "extruded — weight −10%",
         "протянут — масса −10%",
     ),
-    "punch": (
-        lambda b: _scale_weight(b, 0.95),
-        "punched — weight −5%",
-        "пробит — масса −5%",
-    ),
-    # cut: stamp
-    "stamp": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
     "engrave": (
-        lambda b: _scale_price(b, 1.25),
+        lambda b: scale_price(b, 1.25),
         "engraved — price +25%",
         "выгравирован — цена +25%",
     ),
-    "etch": (
-        lambda b: _scale_price(b, 1.15),
-        "etched — price +15%",
-        "вытравлен — цена +15%",
-    ),
-    "polish": (
-        lambda b: _scale_price(b, 1.2),
-        "polished — price +20%",
-        "отполирован — цена +20%",
-    ),
-    "buff": (
-        lambda b: _scale_price(b, 1.1),
-        "buffed — price +10%",
-        "натёрт — цена +10%",
-    ),
-    "sand": (
-        lambda b: _scale_weight(b, 0.95),
-        "sanded — weight −5%",
-        "отшлифован — масса −5%",
-    ),
     "grind": (
-        lambda b: _scale_weight(b, 0.9),
+        lambda b: scale_weight(b, 0.9),
         "ground — weight −10%",
         "сточен — масса −10%",
     ),
-    "drill": (
-        lambda b: _scale_weight(b, 0.95),
-        "drilled — weight −5%",
-        "просверлён — масса −5%",
-    ),
-    "bore": (
-        lambda b: _scale_weight(b, 0.95),
-        "bored — weight −5%",
-        "расточен — масса −5%",
-    ),
-    # cut: ream
-    "ream": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # cut: tap
-    "tap": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # cut: thread
-    "thread": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    "cut": (
-        lambda b: _scale_weight(b, 0.85),
-        "cut — weight −15%",
-        "обрезан — масса −15%",
-    ),
     "trim": (
-        lambda b: _scale_weight(b, 0.9),
+        lambda b: scale_weight(b, 0.9),
         "trimmed — weight −10%",
         "подрезан — масса −10%",
     ),
     "carve": (
-        lambda b: _scale_weight(b, 0.8),
+        lambda b: scale_weight(b, 0.8),
         "carved — weight −20%",
         "вырезан — масса −20%",
     ),
     # shape: mold
     "mold": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # shape: cast
-    "cast": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     "forge": (
-        lambda b: _scale_price(b, 1.1),
+        lambda b: scale_price(b, 1.1),
         "forged — price +10%",
         "выкован — цена +10%",
     ),
     "weld": (
-        lambda b: _scale_price(b, 1.1),
+        lambda b: scale_price(b, 1.1),
         "welded — price +10%",
         "сварен — цена +10%",
     ),
-    # join: braze
-    "braze": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
     # join: solder
     "solder": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     "rivet": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "riveted — price +5%",
         "склёпан — цена +5%",
     ),
-    # join: bolt
-    "bolt": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # join: screw
-    "screw": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
     # join: glue
     "glue": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # join: clip
     "clip": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # join: pin
     "pin": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # join: clamp
-    "clamp": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # operate: tighten
-    "tighten": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # operate: loosen
     "loosen": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     "seal": (
-        lambda b: (setattr(b, "water_resistant", True), _scale_price(b, 1.1)),
+        lambda b: (setattr(b, "water_resistant", True), scale_price(b, 1.1)),
         "sealed — water resistant",
         "герметизирован — водонепроницаем",
     ),
-    # protect: unseal
-    "unseal": (
-        lambda b: setattr(b, "is_proof", False),
-        "unprotected — no shield",
-        "незащищён — без щита",
-    ),
-    # operate: lock
-    "lock": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # operate: unlock
-    "unlock": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
     # join: fasten
     "fasten": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # join: unfasten
-    "unfasten": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # join: mount
     "mount": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
-    ),
-    # join: unmount
-    "unmount": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # join: install
-    "install": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # join: uninstall
-    "uninstall": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # join: insert
-    "insert": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # separate: extract
-    "extract": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # manage: load
-    "load": (
-        lambda b: setattr(b, "quantity", b.quantity + 1),
-        "counted — quantity +1",
-        "подсчитан — количество +1",
     ),
     # manage: unload
     "unload": (
@@ -2665,32 +2468,8 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "counted — quantity +1",
         "подсчитан — количество +1",
     ),
-    # power: charge
-    "charge": (
-        lambda b: None,
-        "powered — no change",
-        "подключён — без изменений",
-    ),
-    # power: discharge
-    "discharge": (
-        lambda b: None,
-        "powered — no change",
-        "подключён — без изменений",
-    ),
-    # power: recharge
-    "recharge": (
-        lambda b: None,
-        "powered — no change",
-        "подключён — без изменений",
-    ),
     # power: power-on
     "power-on": (
-        lambda b: None,
-        "powered — no change",
-        "подключён — без изменений",
-    ),
-    # power: power-off
-    "power-off": (
         lambda b: None,
         "powered — no change",
         "подключён — без изменений",
@@ -2703,21 +2482,15 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
     ),
     # maintain: calibrate
     "calibrate": (
-        lambda b: _scale_price(b, 1.1),
+        lambda b: scale_price(b, 1.1),
         "finished — price +10%",
         "обработан — цена +10%",
     ),
     # maintain: recalibrate
     "recalibrate": (
-        lambda b: _scale_price(b, 1.2),
+        lambda b: scale_price(b, 1.2),
         "finished — price +20%",
         "обработан — цена +20%",
-    ),
-    # maintain: tune
-    "tune": (
-        lambda b: _scale_price(b, 1.05),
-        "finished — price +5%",
-        "обработан — цена +5%",
     ),
     # maintain: detune
     "detune": (
@@ -2731,35 +2504,11 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "data — no change",
         "данные — без изменений",
     ),
-    # data: decode
-    "decode": (
-        lambda b: None,
-        "data — no change",
-        "данные — без изменений",
-    ),
-    # data: encrypt
-    "encrypt": (
-        lambda b: None,
-        "data — no change",
-        "данные — без изменений",
-    ),
-    # data: decrypt
-    "decrypt": (
-        lambda b: None,
-        "data — no change",
-        "данные — без изменений",
-    ),
     # shape: compress-data
     "compress-data": (
-        lambda b: _scale_weight(b, 0.85),
+        lambda b: scale_weight(b, 0.85),
         "sculpted — weight −15%",
         "обработан — масса −15%",
-    ),
-    # shape: decompress
-    "decompress": (
-        lambda b: _scale_weight(b, 0.7),
-        "sculpted — weight −30%",
-        "обработан — масса −30%",
     ),
     # data: format
     "format": (
@@ -2767,39 +2516,9 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "data — no change",
         "данные — без изменений",
     ),
-    # data: reformat
-    "reformat": (
-        lambda b: None,
-        "data — no change",
-        "данные — без изменений",
-    ),
-    # data: initialize
-    "initialize": (
-        lambda b: None,
-        "data — no change",
-        "данные — без изменений",
-    ),
-    # data: configure
-    "configure": (
-        lambda b: None,
-        "data — no change",
-        "данные — без изменений",
-    ),
-    # data: deconfigure
-    "deconfigure": (
-        lambda b: None,
-        "data — no change",
-        "данные — без изменений",
-    ),
-    # data: upgrade
-    "upgrade": (
-        lambda b: _scale_price(b, 1.2),
-        "finished — price +20%",
-        "обработан — цена +20%",
-    ),
     # data: downgrade
     "downgrade": (
-        lambda b: _scale_price(b, 0.85),
+        lambda b: scale_price(b, 0.85),
         "worn — price −15%",
         "изношен — цена −15%",
     ),
@@ -2809,69 +2528,35 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "data — no change",
         "данные — без изменений",
     ),
-    # data: update
-    "update": (
-        lambda b: _scale_price(b, 1.15),
-        "finished — price +15%",
-        "обработан — цена +15%",
-    ),
     # data: patch
     "patch": (
-        lambda b: _scale_price(b, 1.1),
+        lambda b: scale_price(b, 1.1),
         "finished — price +10%",
         "обработан — цена +10%",
     ),
     # maintain: repair
     "repair": (
-        lambda b: _scale_price(b, 1.15),
+        lambda b: scale_price(b, 1.15),
         "finished — price +15%",
         "обработан — цена +15%",
     ),
-    # maintain: service
-    "service": (
-        lambda b: _scale_price(b, 1.2),
-        "finished — price +20%",
-        "обработан — цена +20%",
-    ),
-    # maintain: maintain
-    "maintain": (
-        lambda b: _scale_price(b, 1.05),
-        "finished — price +5%",
-        "обработан — цена +5%",
-    ),
     "lubricate": (
-        lambda b: _scale_oil(b, 1.5),
+        lambda b: scale_oil(b, 1.5),
         "lubricated — oil +50%",
         "смазан — масло +50%",
     ),
     "oil": (
-        lambda b: _scale_oil(b, 1.5),
+        lambda b: scale_oil(b, 1.5),
         "oiled — oil +50%",
         "смазан маслом — масло +50%",
     ),
     "grease": (
-        lambda b: _scale_oil(b, 1.5),
+        lambda b: scale_oil(b, 1.5),
         "greased — oil +50%",
         "смазан — масло +50%",
     ),
-    "clean": (
-        lambda b: _scale_price(b, 1.05),
-        "cleaned — price +5%",
-        "очищен — цена +5%",
-    ),
-    # maintain: wash
-    "wash": (
-        lambda b: _scale_price(b, 1.05),
-        "finished — price +5%",
-        "обработан — цена +5%",
-    ),
-    "decontaminate": (
-        lambda b: _scale_price(b, 1.1),
-        "decontaminated — price +10%",
-        "дезактивирован — цена +10%",
-    ),
     "sterilize": (
-        lambda b: _scale_price(b, 1.1),
+        lambda b: scale_price(b, 1.1),
         "sterilized — price +10%",
         "стерилизован — цена +10%",
     ),
@@ -2899,188 +2584,47 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "measured — no change",
         "измерен — без изменений",
     ),
-    # scan: measure
-    "measure": (
-        lambda b: None,
-        "measured — no change",
-        "измерен — без изменений",
-    ),
     # scan: weigh
     "weigh": (
         lambda b: None,
         "measured — no change",
         "измерен — без изменений",
     ),
-    # scan: meter
-    "meter": (
-        lambda b: None,
-        "measured — no change",
-        "измерен — без изменений",
-    ),
-    # pulse: pressurize
-    "pressurize": (
-        lambda b: _scale_oil(b, 1.3),
-        "filled — oil +30%",
-        "заполнен — масло +30%",
-    ),
-    # pulse: depressurize
-    "depressurize": (
-        lambda b: _scale_oil(b, 1.3),
-        "filled — oil +30%",
-        "заполнен — масло +30%",
-    ),
-    "vent": (
-        lambda b: _scale_weight(b, 0.95),
-        "vented — weight −5%",
-        "стравил давление — масса −5%",
-    ),
-    "purge": (
-        lambda b: _scale_weight(b, 0.9),
-        "purged — weight −10%",
-        "продувка — масса −10%",
-    ),
-    "fill": (
-        lambda b: _scale_oil(b, 1.3),
-        "filled — oil +30%",
-        "заполнен — масло +30%",
-    ),
-    "refill": (
-        lambda b: _scale_oil(b, 1.3),
-        "refilled — oil +30%",
-        "дозаполнен — масло +30%",
-    ),
-    "drain": (
-        lambda b: _scale_weight(b, 0.9),
-        "drained — weight −10%",
-        "осушен — масса −10%",
-    ),
     "empty": (
-        lambda b: _scale_weight(b, 0.85),
+        lambda b: scale_weight(b, 0.85),
         "emptied — weight −15%",
         "опорожнён — масса −15%",
     ),
-    # thermal: cool
-    "cool": (
-        lambda b: _scale_price(b, 0.95),
-        "cooled — price −5%",
-        "охлаждён — цена −5%",
-    ),
-    # thermal: heat
-    "heat": (
-        lambda b: _scale_price(b, 1.1),
-        "heated — price +10%",
-        "нагрет — цена +10%",
-    ),
     # thermal: freeze
     "freeze": (
-        lambda b: _scale_weight(b, 0.95),
+        lambda b: scale_weight(b, 0.95),
         "freezeed — weight −5%",
         "массa −5%",
     ),
-    # thermal: thaw
-    "thaw": (
-        lambda b: _scale_weight(b, 0.95),
-        "thawed — weight −5%",
-        "массa −5%",
-    ),
-    # thermal: melt
-    "melt": (
-        lambda b: _scale_weight(b, 0.95),
-        "melted — weight −5%",
-        "массa −5%",
-    ),
-    "anneal": (
-        lambda b: _scale_price(b, 1.05),
-        "annealed — price +5%",
-        "отожжён — цена +5%",
-    ),
     "temper": (
-        lambda b: _scale_price(b, 1.1),
+        lambda b: scale_price(b, 1.1),
         "tempered — price +10%",
         "отпущен — цена +10%",
     ),
-    # thermal: quench
-    "quench": (
-        lambda b: _scale_weight(b, 0.95),
-        "quenched — weight −5%",
-        "массa −5%",
-    ),
-    "harden": (
-        lambda b: _scale_price(b, 1.15),
-        "hardened — price +15%",
-        "закалён — цена +15%",
-    ),
-    # thermal: soften
-    "soften": (
-        lambda b: _scale_price(b, 0.85),
-        "worn — price −15%",
-        "изношен — цена −15%",
-    ),
-    # thermal: harden-shell
-    "harden-shell": (
-        lambda b: _scale_price(b, 1.05),
-        "finished — price +5%",
-        "обработан — цена +5%",
-    ),
     "sharpen": (
-        lambda b: _scale_price(b, 1.1),
+        lambda b: scale_price(b, 1.1),
         "sharpened — price +10%",
         "заточен — цена +10%",
     ),
     # finish: blunt
     "blunt": (
-        lambda b: _scale_price(b, 0.95),
+        lambda b: scale_price(b, 0.95),
         "worn — price −5%",
         "изношен — цена −5%",
     ),
     # shape: magnify
     "magnify": (
-        lambda b: _scale_weight(b, 1.1),
+        lambda b: scale_weight(b, 1.1),
         "stretched — weight +10%",
         "растянут — масса +10%",
     ),
-    # shape: minify
-    "minify": (
-        lambda b: _scale_weight(b, 0.75),
-        "sculpted — weight −25%",
-        "обработан — масса −25%",
-    ),
-    # optics: focus
-    "focus": (
-        lambda b: _scale_price(b, 1.1),
-        "adjusted — price +10%",
-        "скорректирован — цена +10%",
-    ),
-    # optics: defocus
-    "defocus": (
-        lambda b: _scale_price(b, 1.1),
-        "adjusted — price +10%",
-        "скорректирован — цена +10%",
-    ),
-    # optics: polarize
-    "polarize": (
-        lambda b: _scale_price(b, 1.1),
-        "adjusted — price +10%",
-        "скорректирован — цена +10%",
-    ),
-    # optics: depolarize
-    "depolarize": (
-        lambda b: _scale_price(b, 1.1),
-        "adjusted — price +10%",
-        "скорректирован — цена +10%",
-    ),
-    "magnetize": (
-        lambda b: _scale_price(b, 1.1),
-        "magnetized — price +10%",
-        "намагничен — цена +10%",
-    ),
-    "demagnetize": (
-        lambda b: _scale_weight(b, 0.95),
-        "demagnetized — easier to move — weight −5%",
-        "размагничен — проще перемещать — масса −5%",
-    ),
     "shield": (
-        lambda b: (setattr(b, "is_proof", True), _scale_price(b, 1.1)),
+        lambda b: (setattr(b, "is_proof", True), scale_price(b, 1.1)),
         "shielded — proof",
         "экранирован — защита",
     ),
@@ -3097,7 +2641,7 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "незащищён — без щита",
     ),
     "insulate": (
-        lambda b: (setattr(b, "is_anti_emc", True), _scale_price(b, 1.1)),
+        lambda b: (setattr(b, "is_anti_emc", True), scale_price(b, 1.1)),
         "insulated — anti-EMC",
         "изолирован — защита от ЭМИ",
     ),
@@ -3107,12 +2651,6 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "kinsulate — no change",
         "kinsulate — без изменений",
     ),
-    # protect: aminsulate
-    "aminsulate": (
-        lambda b: None,
-        "aminsulate — no change",
-        "aminsulate — без изменений",
-    ),
     # protect: expose
     "expose": (
         lambda b: setattr(b, "is_proof", False),
@@ -3121,7 +2659,7 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
     ),
     # protect: arm
     "arm": (
-        lambda b: _scale_price(b, 1.2),
+        lambda b: scale_price(b, 1.2),
         "finished — price +20%",
         "обработан — цена +20%",
     ),
@@ -3131,59 +2669,17 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "unprotected — no shield",
         "незащищён — без щита",
     ),
-    # protect: disarm
-    "disarm": (
-        lambda b: setattr(b, "is_proof", False),
-        "unprotected — no shield",
-        "незащищён — без щита",
-    ),
     # protect: prime
     "prime": (
-        lambda b: _scale_price(b, 1.1),
+        lambda b: scale_price(b, 1.1),
         "finished — price +10%",
         "обработан — цена +10%",
-    ),
-    # protect: insland
-    "insland": (
-        lambda b: setattr(b, "is_proof", False),
-        "unprotected — no shield",
-        "незащищён — без щита",
-    ),
-    # protect: outland
-    "outland": (
-        lambda b: setattr(b, "is_proof", False),
-        "unprotected — no shield",
-        "незащищён — без щита",
-    ),
-    # state: deselect
-    "deselect": (
-        lambda b: None,
-        "marked — no change",
-        "помечен — без изменений",
     ),
     # state: select
     "select": (
         lambda b: None,
         "marked — no change",
         "помечен — без изменений",
-    ),
-    # power: activate
-    "activate": (
-        lambda b: None,
-        "powered — no change",
-        "подключён — без изменений",
-    ),
-    # power: hrebate
-    "hrebate": (
-        lambda b: None,
-        "prepared — no change",
-        "подготовлен — без изменений",
-    ),
-    # power: deactivate
-    "deactivate": (
-        lambda b: None,
-        "powered — no change",
-        "подключён — без изменений",
     ),
     # power: enable
     "enable": (
@@ -3203,27 +2699,15 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "isolate — no change",
         "isolate — без изменений",
     ),
-    # operate: integrate
-    "integrate": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
     # separate: disintegrate
     "disintegrate": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
     # join: amalgamate
     "amalgamate": (
-        lambda b: _scale_price(b, 1.05),
-        "processed — price +5%",
-        "обработан — цена +5%",
-    ),
-    # separate: segregate
-    "segregate": (
-        lambda b: _scale_price(b, 1.05),
+        lambda b: scale_price(b, 1.05),
         "processed — price +5%",
         "обработан — цена +5%",
     ),
@@ -3235,12 +2719,6 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
     ),
     # state: index
     "index": (
-        lambda b: None,
-        "marked — no change",
-        "помечен — без изменений",
-    ),
-    # state: categorize
-    "categorize": (
         lambda b: None,
         "marked — no change",
         "помечен — без изменений",
@@ -3257,50 +2735,14 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "marked — no change",
         "помечен — без изменений",
     ),
-    # state: tag
-    "tag": (
-        lambda b: None,
-        "marked — no change",
-        "помечен — без изменений",
-    ),
     # state: untag
     "untag": (
         lambda b: None,
         "marked — no change",
         "помечен — без изменений",
     ),
-    # state: mark
-    "mark": (
-        lambda b: None,
-        "marked — no change",
-        "помечен — без изменений",
-    ),
-    # state: dimark
-    "dimark": (
-        lambda b: None,
-        "marked — no change",
-        "помечен — без изменений",
-    ),
-    # state: unmark
-    "unmark": (
-        lambda b: None,
-        "marked — no change",
-        "помечен — без изменений",
-    ),
     # state: brand
     "brand": (
-        lambda b: None,
-        "marked — no change",
-        "помечен — без изменений",
-    ),
-    # scan: serialize
-    "serialize": (
-        lambda b: None,
-        "measured — no change",
-        "измерен — без изменений",
-    ),
-    # state: register
-    "register": (
         lambda b: None,
         "marked — no change",
         "помечен — без изменений",
@@ -3335,29 +2777,6 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
         "retrieve — no change",
         "retrieve — без изменений",
     ),
-    # data: dispatch
-    "dispatch": (
-        lambda b: None,
-        "dispatch — no change",
-        "dispatch — без изменений",
-    ),
-    # manage: receive
-    "receive": (
-        lambda b: None,
-        "receive — no change",
-        "receive — без изменений",
-    ),
-    "stack": (
-        lambda b: setattr(b, "quantity", b.quantity + 1),
-        "stacked — quantity +1",
-        "сложен в стопку — количество +1",
-    ),
-    # manage: unstack
-    "unstack": (
-        lambda b: setattr(b, "quantity", b.quantity + 1),
-        "counted — quantity +1",
-        "подсчитан — количество +1",
-    ),
     # manage: nest
     "nest": (
         lambda b: None,
@@ -3372,13 +2791,13 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
     ),
     # shape: fold-in
     "fold-in": (
-        lambda b: _scale_weight(b, 0.8),
+        lambda b: scale_weight(b, 0.8),
         "sculpted — weight −20%",
         "обработан — масса −20%",
     ),
     # shape: expand-out
     "expand-out": (
-        lambda b: _scale_weight(b, 1.1),
+        lambda b: scale_weight(b, 1.1),
         "stretched — weight +10%",
         "растянут — масса +10%",
     ),
@@ -3390,30 +2809,6 @@ ABILITY_EFFECTS: dict[str, tuple[callable, str, str]] = {
     ),
     # manage: unpackage
     "unpackage": (
-        lambda b: setattr(b, "quantity", b.quantity + 1),
-        "counted — quantity +1",
-        "подсчитан — количество +1",
-    ),
-    # manage: crate
-    "crate": (
-        lambda b: setattr(b, "quantity", b.quantity + 1),
-        "counted — quantity +1",
-        "подсчитан — количество +1",
-    ),
-    # manage: uncrate
-    "uncrate": (
-        lambda b: setattr(b, "quantity", b.quantity + 1),
-        "counted — quantity +1",
-        "подсчитан — количество +1",
-    ),
-    # manage: palletize
-    "palletize": (
-        lambda b: setattr(b, "quantity", b.quantity + 1),
-        "counted — quantity +1",
-        "подсчитан — количество +1",
-    ),
-    # manage: unpalletize
-    "unpalletize": (
         lambda b: setattr(b, "quantity", b.quantity + 1),
         "counted — quantity +1",
         "подсчитан — количество +1",
@@ -3502,9 +2897,9 @@ async def ui_warehouse_mutate(
         seen.update(ab.id for ab in u.abilities)
     merged = [db.get(AbilityDB, aid) for aid in seen if db.get(AbilityDB, aid)]
     baby.abilities = merged
-    _clamp_price(baby)
-    _clamp_weight(baby)
-    _clamp_oil(baby)
+    clamp_price(baby)
+    clamp_weight(baby)
+    clamp_oil(baby)
     baby.quantity = max(1, baby.quantity)
     baby.parasite_chance = min(90, max(0, baby.parasite_chance))
     db.add(baby)
@@ -3545,7 +2940,7 @@ def ui_combat_duel(request: Request):
 # loop module only needs to be present once the app is fully loaded.
 
 
-def _wf():
+def wf():
     import war_factory
 
     return war_factory
@@ -3554,8 +2949,8 @@ def _wf():
 @app.get("/war/factory/state")
 def war_factory_state(request: Request, db: Session = Depends(get_db)) -> dict:
     """Snapshot of the war-log: current generation, last event, totals."""
-    snapshot = _wf().state(db)
-    snapshot["auto"] = _wf().war_factory_daemon.status()
+    snapshot = wf().state(db)
+    snapshot["auto"] = wf().war_factory_daemon.status()
     profile_step(request, "query")
     return snapshot
 
@@ -3576,10 +2971,10 @@ def war_factory_tick(
 
     if seed is not None:
         _r.seed(seed)
-    from war_factory import run_tick as _wf_run_tick
+    from war_factory import run_tick as wf_run_tick
 
     profile_step(request, "query")
-    result = _wf_run_tick(
+    result = wf_run_tick(
         db,
         build_count=build_count,
         join_pairs=join_pairs,
@@ -3604,7 +2999,7 @@ def war_factory_run(
     db: Session = Depends(get_db),
 ) -> dict:
     """Run N consecutive generations of the war factory loop."""
-    results = _wf().run_loop(
+    results = wf().run_loop(
         ticks=ticks,
         build_count=build_count,
         join_pairs=join_pairs,
@@ -3635,7 +3030,7 @@ def war_factory_test(
     """Run the test facility on a sample of the population and complain
     about any part that isn't working in set."""
     profile_step(request, "query")
-    return [r.to_dict() for r in _wf().test_population(db, sample=sample)]
+    return [r.to_dict() for r in wf().test_population(db, sample=sample)]
 
 
 @app.post("/war/factory/auto/start")
@@ -3651,8 +3046,8 @@ def war_factory_auto_start(
     test_sample: int = Query(default=10, ge=1, le=200),
 ) -> dict:
     """Start the continuous war-factory loop in the background."""
-    wf = _wf()
-    started = wf.war_factory_daemon.start(
+    factory = wf()
+    started = factory.war_factory_daemon.start(
         interval=interval,
         max_generations=max_generations,
         max_population=max_population,
@@ -3663,23 +3058,23 @@ def war_factory_auto_start(
         test_sample=test_sample,
     )
     profile_step(request, "query")
-    return {"started": started, "status": wf.war_factory_daemon.status()}
+    return {"started": started, "status": factory.war_factory_daemon.status()}
 
 
 @app.post("/war/factory/auto/stop")
 def war_factory_auto_stop(request: Request) -> dict:
     """Stop the continuous war-factory loop."""
-    wf = _wf()
-    stopped = wf.war_factory_daemon.stop()
+    factory = wf()
+    stopped = factory.war_factory_daemon.stop()
     profile_step(request, "query")
-    return {"stopped": stopped, "status": wf.war_factory_daemon.status()}
+    return {"stopped": stopped, "status": factory.war_factory_daemon.status()}
 
 
 @app.get("/war/factory/auto/status")
 def war_factory_auto_status(request: Request) -> dict:
     """Return the live status of the background war-factory loop."""
     profile_step(request, "query")
-    return _wf().war_factory_daemon.status()
+    return wf().war_factory_daemon.status()
 
 
 @app.get("/ui/war-factory", response_class=HTMLResponse)
@@ -4025,7 +3420,7 @@ async def ui_subitem_create(
     form = getattr(request.state, "form_data", None) or await request.form()
     name = form.get("name", "")
     quantity = form.get("quantity", "")
-    is_parasite = _form_bool(form.get("is_parasite"))
+    is_parasite = form_bool(form.get("is_parasite"))
     parasite_chance = form.get("parasite_chance", "0")
     logger.info(
         "UI POST /ui/items/%s/subitems name=%s qty=%s parasite=%s",
@@ -4120,7 +3515,7 @@ class AbilityParamOut(BaseModel):
     param_name: str | None = None
 
 
-def _ap_out(ap: AbilityParamDB) -> AbilityParamOut:
+def ap_out(ap: AbilityParamDB) -> AbilityParamOut:
     return AbilityParamOut(
         id=ap.id,
         ability_id=ap.ability_id,
@@ -4153,7 +3548,7 @@ def list_ability_params(
         q = q.where(AbilityParamDB.ability_id == ability_id)
     if param_id:
         q = q.where(AbilityParamDB.param_id == param_id)
-    return [_ap_out(x) for x in db.scalars(q.order_by(AbilityParamDB.id)).all()]
+    return [ap_out(x) for x in db.scalars(q.order_by(AbilityParamDB.id)).all()]
 
 
 @app.post("/api/ability-params", response_model=AbilityParamOut, status_code=201)
@@ -4173,7 +3568,7 @@ def create_ability_param(payload: AbilityParamCreate, db: Session = Depends(get_
         )
         .where(AbilityParamDB.id == ap.id)
     ).one()
-    return _ap_out(ap)
+    return ap_out(ap)
 
 
 @app.put("/api/ability-params/{ap_id}", response_model=AbilityParamOut)
@@ -4194,7 +3589,7 @@ def update_ability_param(
         )
         .where(AbilityParamDB.id == ap.id)
     ).one()
-    return _ap_out(ap)
+    return ap_out(ap)
 
 
 @app.delete("/api/ability-params/{ap_id}", status_code=204)
@@ -4318,7 +3713,7 @@ def create_event(payload: dict, db: Session = Depends(get_db)):
             if "ability_id" not in payload
             else ([payload["ability_id"]] if payload["ability_id"] is not None else [])
         )
-        _set_event_abilities(ev, ability_ids, db)
+        set_event_abilities(ev, ability_ids, db)
         db.add(ev)
         db.commit()
         return {"id": ev.id, "name": ev.name}
@@ -4341,10 +3736,10 @@ def update_event(event_id: int, payload: dict, db: Session = Depends(get_db)):
     if "event_per_10msec" in payload:
         ev.event_per_10msec = float(payload["event_per_10msec"])
     if "ability_ids" in payload:
-        _set_event_abilities(ev, payload["ability_ids"] or [], db)
+        set_event_abilities(ev, payload["ability_ids"] or [], db)
     elif "ability_id" in payload:
         ability_id = payload["ability_id"]
-        _set_event_abilities(ev, [ability_id] if ability_id is not None else [], db)
+        set_event_abilities(ev, [ability_id] if ability_id is not None else [], db)
     db.commit()
     return {"id": ev.id, "name": ev.name}
 
@@ -4358,7 +3753,7 @@ def delete_event(event_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
-def _set_event_abilities(ev: EventDB, ability_ids: list, db: Session) -> None:
+def set_event_abilities(ev: EventDB, ability_ids: list, db: Session) -> None:
     keep = []
     for aid in ability_ids:
         a = db.get(AbilityDB, aid)
@@ -4396,9 +3791,7 @@ def ui_events(
 # ── Test Facility: unit inspector ─────────────────────────────
 @app.get("/api/units", response_model=list[dict])
 def api_list_units(db: Session = Depends(get_db)):
-    rows = db.scalars(
-        select(ItemDB).where(_is_root_item()).order_by(ItemDB.name)
-    ).all()
+    rows = db.scalars(select(ItemDB).where(is_root_item()).order_by(ItemDB.name)).all()
     return [{"id": r.id, "name": r.name} for r in rows]
 
 
@@ -4450,7 +3843,7 @@ def api_unit_report(item_id: int, db: Session = Depends(get_db)):
                     "param_category": p.par_category if p else "",
                     "operation": ap.operation,
                     "curve": ap.curve,
-                    "value": _fmt_value(ap.modify_coefficient_per_10msec),
+                    "value": fmt_value(ap.modify_coefficient_per_10msec),
                     "detail": "%s %s" % (ap.operation, ap.curve),
                 }
             )
@@ -4478,7 +3871,7 @@ def api_unit_report(item_id: int, db: Session = Depends(get_db)):
         v = (
             ip.value_text
             if ip.value is None and ip.value_text
-            else (_fmt_value(ip.value) if ip.value is not None else "—")
+            else (fmt_value(ip.value) if ip.value is not None else "—")
         )
         rows.append(
             {
@@ -4511,7 +3904,7 @@ def api_unit_report(item_id: int, db: Session = Depends(get_db)):
     }
 
 
-def _fmt_value(v):
+def fmt_value(v):
     if v is None:
         return "—"
     if isinstance(v, float):

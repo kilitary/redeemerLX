@@ -24,3 +24,10 @@ data/
 .zed/
 logs/
 .kagents/planning-with-files/
+.playwright-mcp/
+hwinfo.md
+dmesg-report.md
+dmesg/momd.off
+dmesg/logs.txt
+dmesg/
+.vscode/

@@ -1,11 +1,8 @@
 """SEPARATE category abilities with linked parameters."""
 
 SEPARATE_ABILITIES = (
-    ('split', 'divide the object into smaller parts', 'разделить объект на более мелкие части'),
-    ('extract', 'pull the object out of its socket or cavity', 'извлечь объект из гнезда или полости'),
     ('isolate', 'separate the object from its surroundings', 'отделить объект от окружения'),
     ('disintegrate', 'break the object into fragments', 'разбить объект на фрагменты'),
-    ('segregate', 'keep the object apart from others', 'держать объект отдельно от других'),
 )
 
 SEPARATE_PARAMETERS = {
